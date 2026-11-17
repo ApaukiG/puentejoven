@@ -111,6 +111,28 @@ const OFERTAS = [
   { id: "o12", titulo: "Asistente de comunicación", empresa: "Fundación Raíces (ejemplo)", carrera: "Comunicación y Diseño", ciudad: "Cuenca", modalidad: "Presencial", salario: 490, tipo: "Empleo", primeraOportunidad: false, dias: 7, descripcion: "Redacción de notas, apoyo en eventos y manejo de redes.", requisitos: ["Buena redacción", "Fotografía básica"] },
   { id: "o13", titulo: "Pasante de cocina y operaciones", empresa: "Restaurante Allpa (ejemplo)", carrera: "Turismo y Gastronomía", ciudad: "Quito", modalidad: "Presencial", salario: 300, tipo: "Pasantía", primeraOportunidad: true, dias: 4, descripcion: "Rotación por cocina, compras y costos con jefe de cocina como tutor.", requisitos: ["Estudiante o egresado de Gastronomía"] },
   { id: "o14", titulo: "Asistente financiero junior", empresa: "Cooperativa del Sur (ejemplo)", carrera: "Contabilidad y Auditoría", ciudad: "Loja", modalidad: "Presencial", salario: 530, tipo: "Empleo", primeraOportunidad: true, dias: 2, descripcion: "Análisis de cartera, reportes y atención a socios.", requisitos: ["Título en Contabilidad o Finanzas", "Excel intermedio"] },
+  { id: "o15", titulo: "Pasante de compras y logística", empresa: "Comercial Andina (ejemplo)", carrera: "Administración", ciudad: "Quito", modalidad: "Híbrido", salario: 350, tipo: "Pasantía", primeraOportunidad: true, dias: 3, descripcion: "Pasantía de 6 meses: cotizaciones a proveedores, control de pedidos y reportes, con tutor asignado.", requisitos: ["Estudiante o recién graduado", "Excel básico", "Organización"] },
+];
+
+/* ---------- Perfil de empresa de ejemplo (rol "empresa") ---------- */
+const EMPRESA_INICIAL = {
+  nombre: "Comercial Andina (ejemplo)",
+  sector: "Comercio y distribución",
+  ciudad: "Quito",
+  tamano: "50 a 200 empleados",
+  descripcion: "Distribuidora de productos de consumo masivo. Creemos en formar talento joven desde su primer empleo.",
+  contacto: "talento@comercialandina.ec",
+  ofertasBase: ["o1", "o15"], // ofertas de OFERTAS que pertenecen a esta empresa
+};
+
+/* ---------- Otros postulantes de ejemplo (los ve la empresa) ----------
+   "dias" = hace cuántos días ocurrió cada estado alcanzado. */
+const CANDIDATOS = [
+  { id: "k1", ofertaId: "o1", nombre: "Bryan Tituaña", carrera: "Administración", ciudad: "Quito", graduacion: "Graduado hace 3 meses", bio: "Administrador con interés en procesos y atención al cliente.", habilidades: ["Excel básico", "Atención al cliente", "Puntualidad"], cursos: ["Excel avanzado: tablas dinámicas y BUSCARX"], experiencias: [{ tipo: "Negocio familiar", titulo: "Ayudante en ferretería familiar", logro: "Llevé el registro de ventas diarias durante 2 años." }], recos: 0, estado: 2, dias: [6, 5, 2] },
+  { id: "k2", ofertaId: "o1", nombre: "Daniela Chicaiza", carrera: "Administración", ciudad: "Quito", graduacion: "Graduada hace 8 meses", bio: "Me apasiona organizar y mejorar procesos. Busco mi primer empleo formal.", habilidades: ["Excel intermedio", "Power BI básico", "Trabajo en equipo", "Inglés B1"], cursos: ["Excel avanzado: tablas dinámicas y BUSCARX", "Power BI desde cero"], experiencias: [{ tipo: "Pasantía", titulo: "Pasante administrativa", logro: "Digitalicé 300 facturas y armé un tablero de gastos mensual." }], recos: 1, estado: 1, dias: [4, 3] },
+  { id: "k3", ofertaId: "o1", nombre: "Kevin Morales", carrera: "Marketing", ciudad: "Latacunga", graduacion: "Graduado hace 1 año", bio: "Busco cambiar de área y aprender sobre administración.", habilidades: ["Redes sociales", "Canva"], cursos: [], experiencias: [], recos: 0, estado: 0, dias: [1] },
+  { id: "k4", ofertaId: "o15", nombre: "Mishell Andrango", carrera: "Administración", ciudad: "Quito", graduacion: "Último semestre", bio: "Estudiante de último semestre, organizada y con muchas ganas de aprender logística.", habilidades: ["Excel intermedio", "Organización", "Comunicación"], cursos: ["Excel avanzado: tablas dinámicas y BUSCARX"], experiencias: [{ tipo: "Proyecto", titulo: "Proyecto de cadena de suministro", logro: "Propuse una ruta de reparto que reducía 15% el tiempo de entrega." }], recos: 1, estado: 0, dias: [0.5] },
+  { id: "k5", ofertaId: "o15", nombre: "Jonathan Pilco", carrera: "Contabilidad y Auditoría", ciudad: "Sangolquí", graduacion: "Graduado hace 2 meses", bio: "Contador recién graduado, interesado en compras y control de inventarios.", habilidades: ["Excel intermedio", "Facturación electrónica"], cursos: ["Facturación electrónica paso a paso"], experiencias: [{ tipo: "Pasantía", titulo: "Pasante contable", logro: "Concilié 4 cuentas bancarias mensuales sin errores." }], recos: 0, estado: 1, dias: [2, 1] },
 ];
 
 /* ---------- Simulador de entrevistas ---------- */
