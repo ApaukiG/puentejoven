@@ -72,7 +72,7 @@
       <a href="#empleos" data-link="empleos">Empleos</a>
       <a href="#empresas" data-link="empresas">Para empresas</a>
       <a href="#nosotros" data-link="nosotros">Nosotros</a>
-      <a href="#panel" data-link="panel" class="btn btn--primary btn--sm nav__cta">
+      <a href="#panel" data-link="panel" class="btn btn--primary btn--sm nav__cta" id="navPanel">
         <svg class="i"><use href="#i-user"/></svg> Mi panel
       </a>
     </nav>
@@ -100,8 +100,8 @@
         <h1 aria-label="Tu primera oportunidad no debería exigir experiencia"><span aria-hidden="true"><span class="w"><span style="--i:0">Tu</span></span> <span class="w"><span style="--i:1">primera</span></span> <span class="w"><span style="--i:2">oportunidad</span></span> <span class="w"><span class="serif" style="--i:3">no</span></span> <span class="w"><span class="serif" style="--i:4">debería</span></span> <span class="w"><span style="--i:5">exigir</span></span> <span class="w"><span style="--i:6">experiencia</span></span></span></h1>
         <p class="lead">Capacítate gratis, consigue un mentor que te recomiende y postula a empleos y pasantías pensados para perfiles junior. Sin círculos viciosos.</p>
         <div class="hero__ctas">
-          <a href="#panel" class="btn btn--primary btn--lg"><svg class="i"><use href="#i-grad"/></svg> Soy joven</a>
-          <a href="#empresas" class="btn btn--outline btn--lg"><svg class="i"><use href="#i-building"/></svg> Soy empresa</a>
+          <a href="#panel" class="btn btn--primary btn--lg" data-role-set="joven" data-role-silent><svg class="i"><use href="#i-grad"/></svg> Soy joven</a>
+          <a href="#panel" class="btn btn--outline btn--lg" data-role-set="empresa" data-role-silent><svg class="i"><use href="#i-building"/></svg> Soy empresa</a>
         </div>
         <ul class="hero__checks">
           <li><svg class="i"><use href="#i-check"/></svg> Cursos con certificado</li>
@@ -224,7 +224,7 @@
         <svg class="i i--xl"><use href="#i-grad"/></svg>
         <h3>Soy joven</h3>
         <p>Arma tu perfil con cursos, pasantías y proyectos. Postula y sigue cada paso.</p>
-        <a href="#panel" class="btn btn--primary">Crear mi perfil <svg class="i"><use href="#i-arrow"/></svg></a>
+        <a href="#panel" class="btn btn--primary" data-role-set="joven" data-role-silent>Crear mi perfil <svg class="i"><use href="#i-arrow"/></svg></a>
       </div>
       <div class="cta-card cta-card--company reveal">
         <svg class="i i--xl"><use href="#i-building"/></svg>
@@ -578,15 +578,22 @@
     <div class="container panel-head">
       <div class="avatar avatar--xl" id="pAvatar"></div>
       <div>
-        <span class="kicker">Mi panel</span>
+        <span class="kicker" id="pKicker">Mi panel</span>
         <h1 id="pName"></h1>
         <p class="lead" id="pMeta"></p>
       </div>
-      <button class="btn btn--outline" id="pEdit"><svg class="i"><use href="#i-user"/></svg> Editar perfil</button>
+      <div class="panel-head__side">
+        <div class="seg role-switch" role="group" aria-label="Usar la plataforma como">
+          <button class="seg__btn" data-role-set="joven" aria-pressed="true"><svg class="i"><use href="#i-grad"/></svg> Joven</button>
+          <button class="seg__btn" data-role-set="empresa" aria-pressed="false"><svg class="i"><use href="#i-building"/></svg> Empresa</button>
+        </div>
+        <button class="btn btn--outline" id="pEdit"><svg class="i"><use href="#i-user"/></svg> Editar perfil</button>
+      </div>
     </div>
   </div>
 
-  <section class="section">
+  <!-- Panel del joven -->
+  <section class="section" id="panelJoven">
     <div class="container dash">
       <!-- Columna izquierda: perfil -->
       <div class="dash__col">
@@ -622,7 +629,7 @@
             <h3>Mis postulaciones</h3>
             <a href="#empleos" class="link">Buscar más <svg class="i"><use href="#i-arrow"/></svg></a>
           </div>
-          <p class="muted small">Cada empresa se compromete a actualizar el estado de tu postulación. Usa "Simular avance" para ver cómo funciona.</p>
+          <p class="muted small">Cada empresa se compromete a actualizar el estado de tu postulación. Las ofertas de la empresa de la demo se responden desde el modo Empresa; en las demás usa "Simular respuesta de la empresa".</p>
           <div id="pApps" class="apps"></div>
         </div>
 
@@ -642,6 +649,46 @@
           </div>
         </div>
         <button class="btn btn--ghost btn--sm" id="pReset">Restablecer datos de ejemplo</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel de la empresa -->
+  <section class="section" id="panelEmpresa" hidden>
+    <div class="container dash">
+      <!-- Columna izquierda: perfil de la empresa -->
+      <div class="dash__col">
+        <div class="card">
+          <h3><svg class="i"><use href="#i-building"/></svg> Sobre la empresa</h3>
+          <p id="eBio"></p>
+          <p class="small muted e-contact" id="eContacto"></p>
+          <div id="eSello"></div>
+        </div>
+
+        <div class="card">
+          <h3>Resumen</h3>
+          <div class="kpis" id="eKpis"></div>
+          <div id="eCompromiso"></div>
+        </div>
+      </div>
+
+      <!-- Columna derecha: ofertas y postulantes -->
+      <div class="dash__col dash__col--wide">
+        <div class="card">
+          <div class="card__head">
+            <h3><svg class="i"><use href="#i-briefcase"/></svg> Mis ofertas</h3>
+            <a href="#empresas" class="btn btn--primary btn--sm"><svg class="i"><use href="#i-plus"/></svg> Publicar oferta</a>
+          </div>
+          <p class="muted small">Elige una oferta para revisar a sus postulantes.</p>
+          <div class="eoffers" id="eOfertas"></div>
+        </div>
+
+        <div class="card" id="eCands">
+          <h3 id="eCandsTitle">Postulantes</h3>
+          <p class="muted small">Revisa cada perfil y actualiza el estado. El joven ve cada cambio en su panel.</p>
+          <div class="apps" id="eCandList"></div>
+        </div>
+        <button class="btn btn--ghost btn--sm" id="pResetE">Restablecer datos de ejemplo</button>
       </div>
     </div>
   </section>
@@ -795,10 +842,11 @@
       <a href="#capacitaciones">Capacitaciones</a>
       <a href="#mentores">Mentores</a>
       <a href="#empleos">Empleos y pasantías</a>
-      <a href="#panel">Mi panel</a>
+      <a href="#panel" data-role-set="joven" data-role-silent>Mi panel</a>
     </div>
     <div>
       <h4>Empresas</h4>
+      <a href="#panel" data-role-set="empresa" data-role-silent>Mi empresa</a>
       <a href="#empresas">Publicar oferta</a>
       <a href="#empresas">Sello Primera Oportunidad</a>
     </div>

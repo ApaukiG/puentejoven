@@ -41,11 +41,21 @@
       alertas: [],
       ofertasEmpresa: [],
       simPracticas: 0,
+      // Rol activo: "joven" (busca empleo) o "empresa" (publica ofertas)
+      rol: "joven",
+      empresa: JSON.parse(JSON.stringify(EMPRESA_INICIAL)),
+      candidatos: CANDIDATOS.map((c) => {
+        const { dias, ...rest } = c;
+        return { ...rest, fechas: dias.map((d) => now - d * DAY), resultado: null, feedback: "" };
+      }),
     };
   };
   let state;
   try {
-    state = JSON.parse(localStorage.getItem(KEY)) || defaultState();
+    // Se combina con el estado por defecto para que datos guardados antes
+    // de existir los dos perfiles sigan funcionando.
+    const saved = JSON.parse(localStorage.getItem(KEY));
+    state = saved ? { ...defaultState(), ...saved } : defaultState();
   } catch (e) {
     state = defaultState();
   }
@@ -53,8 +63,14 @@
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* modo privado: sigue en memoria */ }
   };
 
-  const allOfertas = () => [...state.ofertasEmpresa, ...OFERTAS];
+  // Una oferta es "propia" si la publicó la empresa del panel (desde este navegador)
+  // o si es una de las ofertas de ejemplo que le pertenecen.
+  const esPropia = (id) =>
+    state.empresa.ofertasBase.includes(id) || state.ofertasEmpresa.some((o) => o.id === id);
+  const allOfertas = () =>
+    [...state.ofertasEmpresa, ...OFERTAS].map((o) => (esPropia(o.id) ? { ...o, empresa: state.empresa.nombre } : o));
   const getOferta = (id) => allOfertas().find((o) => o.id === id);
+  const misOfertas = () => allOfertas().filter((o) => esPropia(o.id));
 
   /* ---------------- Toasts y modal ---------------- */
   function toast(msg, type = "ok") {
@@ -82,13 +98,51 @@
     if (e.target === modal || e.target.closest("[data-close]")) closeModal();
   });
 
+  /* ---------------- Rol: joven o empresa ---------------- */
+  const currentPage = () => {
+    const h = location.hash.replace("#", "") || "inicio";
+    return PAGES.includes(h) ? h : "inicio";
+  };
+
+  // Ajusta el menú y los selectores según el rol activo
+  function updateRoleUI() {
+    const emp = state.rol === "empresa";
+    const cta = $("#navPanel");
+    cta.innerHTML = `${ic(emp ? "building" : "user")} ${emp ? "Mi empresa" : "Mi panel"}`;
+    document.body.dataset.rol = state.rol;
+    $$("[data-role-set]").forEach((b) => {
+      if (!b.classList.contains("seg__btn")) return;
+      const on = b.dataset.roleSet === state.rol;
+      b.classList.toggle("is-active", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+  }
+
+  function setRol(rol, silent = false) {
+    if (rol !== "joven" && rol !== "empresa") return;
+    const changed = state.rol !== rol;
+    state.rol = rol;
+    save();
+    updateRoleUI();
+    if (changed && !silent) toast(rol === "empresa" ? `Ahora usas el perfil de empresa: ${state.empresa.nombre}` : `Ahora usas el perfil de joven: ${state.perfil.nombre}`, "info");
+    const page = currentPage();
+    if (changed && renderers[page]) renderers[page]();
+  }
+
+  // Cualquier botón o enlace con data-role-set cambia el rol
+  // (Soy joven / Soy empresa, el selector del panel, etc.)
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-role-set]");
+    if (b) setRol(b.dataset.roleSet, b.hasAttribute("data-role-silent"));
+  });
+
   /* ---------------- Navegación (router por hash) ---------------- */
   const PAGES = $$(".page").map((p) => p.dataset.page);
   const renderers = {};
 
   function route() {
-    const hash = location.hash.replace("#", "") || "inicio";
-    const page = PAGES.includes(hash) ? hash : "inicio";
+    const page = currentPage();
+    updateRoleUI();
     $$(".page").forEach((p) => (p.hidden = p.dataset.page !== page));
     $$(".nav a").forEach((a) => a.classList.toggle("is-active", a.dataset.link === page));
     closeMenu();
@@ -566,10 +620,23 @@
     return p.length ? p.join(" · ") : "Todas las ofertas";
   };
 
+  // Botón principal de una oferta según el rol activo
+  function jobAction(o, post, block = false) {
+    const w = block ? "btn--block" : "btn--sm";
+    if (state.rol === "empresa") {
+      return esPropia(o.id)
+        ? `<a class="btn btn--accent ${w}" href="#panel" data-ver-oferta="${o.id}" data-close>${ic("users")} Ver postulantes (${postulantesDe(o.id).length})</a>`
+        : `<span class="badge badge--line">Solo los jóvenes pueden postular</span>`;
+    }
+    return post
+      ? `<a class="btn btn--green ${w}" href="#panel" data-close>${ic("check")} ${block ? "Ya postulaste · " : ""}${post.resultado ? (post.resultado === "si" ? "Seleccionada" : "Finalizada") : ESTADOS[post.estado]}</a>`
+      : `<button class="btn btn--primary ${w}" ${block ? `id="modalApply"` : `data-apply="${o.id}"`}>Postularme ${ic("arrow")}</button>`;
+  }
+
   function jobCard(o) {
     const post = state.postulaciones.find((p) => p.ofertaId === o.id);
     return `
-      <article class="job ${o.nueva ? "job--new" : ""}">
+      <article class="job ${o.nueva ? "job--new" : ""} ${state.rol === "empresa" && esPropia(o.id) ? "job--mine" : ""}">
         <div class="job__logo" aria-hidden="true">${initials(o.empresa.replace(/\(.*\)/, ""))}</div>
         <div class="job__body">
           <div class="job__badges">
@@ -577,6 +644,7 @@
             <span class="badge badge--line">${o.modalidad}</span>
             ${o.primeraOportunidad ? `<span class="badge badge--seal">${ic("shield")} Primera Oportunidad</span>` : ""}
             ${o.nueva ? `<span class="badge badge--green">Nueva</span>` : ""}
+            ${state.rol === "empresa" && esPropia(o.id) ? `<span class="badge badge--sand">${ic("building")} Tu oferta</span>` : ""}
           </div>
           <h3>${esc(o.titulo)}</h3>
           <p class="job__company">${esc(o.empresa)}</p>
@@ -589,9 +657,7 @@
         </div>
         <div class="job__actions">
           <button class="btn btn--ghost btn--sm" data-detail="${o.id}">Ver detalle</button>
-          ${post
-            ? `<a class="btn btn--green btn--sm" href="#panel">${ic("check")} ${ESTADOS[post.estado]}</a>`
-            : `<button class="btn btn--primary btn--sm" data-apply="${o.id}">Postularme ${ic("arrow")}</button>`}
+          ${jobAction(o, post)}
         </div>
       </article>`;
   }
@@ -643,9 +709,7 @@
         <h4>Lo que buscamos</h4>
         <ul class="ticks">${o.requisitos.map((r) => `<li>${ic("check")} ${esc(r)}</li>`).join("")}</ul>
         ${o.primeraOportunidad ? `<p class="note">${ic("shield")} Esta empresa no exige experiencia previa y se compromete a responder a todas las postulaciones.</p>` : ""}
-        ${post
-          ? `<a class="btn btn--green btn--block" href="#panel" data-close>${ic("check")} Ya postulaste · ${ESTADOS[post.estado]}</a>`
-          : `<button class="btn btn--primary btn--block" id="modalApply">Postularme ${ic("arrow")}</button>`}
+        ${jobAction(o, post, true)}
       `);
       $("#modalApply")?.addEventListener("click", () => { apply(o.id); closeModal(); renderJobs(); });
     }
@@ -654,8 +718,9 @@
   renderers.empleos = renderJobs;
 
   /* =========================================================
-     MI PANEL
+     MI PANEL (joven)
      ========================================================= */
+  const FEEDBACK_DEFECTO = "Tu perfil es prometedor. Te sugerimos reforzar inglés y practicar ejemplos concretos en la entrevista.";
   function profileStrength() {
     const p = state.perfil;
     let s = 0;
@@ -681,6 +746,16 @@
   }
 
   function renderPanel() {
+    const emp = state.rol === "empresa";
+    $("#panelJoven").hidden = emp;
+    $("#panelEmpresa").hidden = !emp;
+    $("#pKicker").textContent = emp ? "Panel de empresa" : "Mi panel";
+    $("#pEdit").innerHTML = `${ic(emp ? "building" : "user")} ${emp ? "Editar empresa" : "Editar perfil"}`;
+    $("#pAvatar").classList.toggle("avatar--company", emp);
+    if (emp) renderPanelEmpresa(); else renderPanelJoven();
+  }
+
+  function renderPanelJoven() {
     const p = state.perfil;
     $("#pAvatar").textContent = initials(p.nombre);
     $("#pName").textContent = p.nombre;
@@ -711,7 +786,10 @@
       if (!o) return "";
       let result = "";
       if (post.resultado === "si") result = `<div class="result result--ok">${ic("check")} <div><b>¡Felicitaciones! Fuiste seleccionado/a.</b><p>La empresa te contactará para coordinar tu ingreso.</p></div></div>`;
-      if (post.resultado === "no") result = `<div class="result result--mid">${ic("chat")} <div><b>Esta vez no fuiste seleccionado/a, pero recibiste retroalimentación:</b><p>“Tu perfil es prometedor. Te sugerimos reforzar inglés y practicar ejemplos concretos en la entrevista.”</p><a href="#capacitaciones" class="link">Ir a capacitaciones ${ic("arrow")}</a></div></div>`;
+      if (post.resultado === "no") result = `<div class="result result--mid">${ic("chat")} <div><b>Esta vez no fuiste seleccionado/a, pero recibiste retroalimentación:</b><p>“${esc(post.feedback || FEEDBACK_DEFECTO)}”</p><a href="#capacitaciones" class="link">Ir a capacitaciones ${ic("arrow")}</a></div></div>`;
+      // Las ofertas de la empresa del panel se responden desde "Mi empresa";
+      // las demás (empresas de ejemplo) se pueden simular.
+      const propia = esPropia(o.id);
       return `
         <div class="app">
           <div class="app__head">
@@ -721,7 +799,8 @@
           ${stepper(post)}
           ${result}
           <div class="app__actions">
-            ${post.estado < 4 ? `<button class="btn btn--outline btn--sm" data-advance="${i}">${ic("loop")} Simular avance</button>` : ""}
+            ${post.estado < 4 && !propia ? `<button class="btn btn--outline btn--sm" data-advance="${i}">${ic("loop")} Simular respuesta de la empresa</button>` : ""}
+            ${post.estado < 4 && propia ? `<span class="muted small">${ic("building")} ${esc(o.empresa)} responde desde su panel.</span> <a href="#panel" class="link-btn" data-role-set="empresa">Ver como empresa</a>` : ""}
             <button class="link-btn" data-withdraw="${i}">Retirar</button>
           </div>
         </div>`;
@@ -800,11 +879,18 @@
       toast(`${mt.nombre} dejó una recomendación en tu perfil`);
     }
     if (t.id === "pAddExp") openExpForm();
-    if (t.id === "pEdit") openProfileForm();
-    if (t.id === "pReset") {
-      state = defaultState(); save(); renderPanel();
+    if (t.id === "pEdit") (state.rol === "empresa" ? openCompanyForm : openProfileForm)();
+    if (t.id === "pReset" || t.id === "pResetE") {
+      const rol = state.rol;
+      state = defaultState(); state.rol = rol; save(); renderPanel();
       toast("Datos de ejemplo restablecidos", "info");
     }
+    // Panel de empresa
+    if (t.dataset.selOferta) { empSel = t.dataset.selOferta; renderPanelEmpresa(); $("#eCands").scrollIntoView({ behavior: "smooth", block: "start" }); }
+    if (t.dataset.verCand) openCandidato(t.dataset.verCand);
+    if (t.dataset.avanzar) avanzarCand(t.dataset.avanzar);
+    if (t.dataset.seleccionar) decidirCand(t.dataset.seleccionar, "si");
+    if (t.dataset.descartar) openDescartar(t.dataset.descartar);
   });
 
   function openProfileForm() {
@@ -858,6 +944,272 @@
     });
   }
 
+  /* =========================================================
+     MI EMPRESA (panel del rol "empresa")
+     ========================================================= */
+  let empSel = null; // oferta seleccionada para ver sus postulantes
+
+  // Un postulante puede ser el joven del panel (sus postulaciones reales)
+  // o uno de los candidatos de ejemplo. Ambos se muestran con la misma forma.
+  const candJoven = (post) => {
+    const p = state.perfil;
+    return {
+      key: "yo:" + post.ofertaId, nombre: p.nombre, carrera: p.carrera, ciudad: p.ciudad,
+      graduacion: p.graduacion, bio: p.bio, habilidades: p.habilidades, experiencias: p.experiencias,
+      cursos: state.cursos.completados.map((id) => CURSOS.find((c) => c.id === id)).filter(Boolean).map((c) => c.titulo),
+      nRecos: state.recos.length, recosList: state.recos, post, esJoven: true,
+    };
+  };
+  const candEjemplo = (c) => ({ ...c, key: c.id, nRecos: c.recos, recosList: [], post: c, esJoven: false });
+
+  function postulantesDe(ofertaId) {
+    const list = [];
+    const mine = state.postulaciones.find((p) => p.ofertaId === ofertaId);
+    if (mine) list.push(candJoven(mine));
+    state.candidatos.filter((c) => c.ofertaId === ofertaId).forEach((c) => list.push(candEjemplo(c)));
+    return list;
+  }
+  function findCand(key) {
+    if (key.startsWith("yo:")) {
+      const post = state.postulaciones.find((p) => p.ofertaId === key.slice(3));
+      return post ? candJoven(post) : null;
+    }
+    const c = state.candidatos.find((x) => x.id === key);
+    return c ? candEjemplo(c) : null;
+  }
+
+  const estadoLabel = (post) =>
+    post.resultado ? (post.resultado === "si" ? "Seleccionado/a" : "No seleccionado/a") : ESTADOS[post.estado];
+  const SIGUIENTE = { 0: "Marcar como vista", 1: "Pasar a revisión", 2: "Invitar a entrevista" };
+
+  function candActions(c) {
+    const post = c.post;
+    if (post.resultado) {
+      return `<span class="badge ${post.resultado === "si" ? "badge--green" : "badge--sand"}">${ic(post.resultado === "si" ? "check" : "chat")} ${estadoLabel(post)}</span>`;
+    }
+    return `
+      ${post.estado < 3 ? `<button class="btn btn--outline btn--sm" data-avanzar="${c.key}">${ic("arrow")} ${SIGUIENTE[post.estado]}</button>` : ""}
+      <button class="btn btn--green btn--sm" data-seleccionar="${c.key}">${ic("check")} Seleccionar</button>
+      <button class="btn btn--ghost btn--sm" data-descartar="${c.key}">No seleccionar</button>`;
+  }
+
+  function cambiarEstado(c, estado) {
+    c.post.estado = estado;
+    c.post.fechas[estado] = Date.now();
+  }
+  function avisoJoven(c) {
+    if (c.esJoven) setTimeout(() => toast(`${c.nombre} verá este cambio en su panel de joven`, "info"), 500);
+  }
+  function refrescarEmpresa() {
+    save();
+    if (currentPage() === "panel") renderPanel();
+  }
+
+  function avanzarCand(key) {
+    const c = findCand(key);
+    if (!c || c.post.resultado || c.post.estado >= 3) return;
+    cambiarEstado(c, c.post.estado + 1);
+    refrescarEmpresa();
+    toast(`${c.nombre}: ${ESTADOS[c.post.estado]}`);
+    avisoJoven(c);
+  }
+
+  function decidirCand(key, resultado, feedback = "") {
+    const c = findCand(key);
+    if (!c || c.post.resultado) return;
+    cambiarEstado(c, 4);
+    c.post.resultado = resultado;
+    c.post.feedback = feedback;
+    refrescarEmpresa();
+    closeModal();
+    toast(resultado === "si" ? `¡${c.nombre} fue seleccionado/a!` : `Se envió tu retroalimentación a ${c.nombre}`);
+    avisoJoven(c);
+  }
+
+  function openDescartar(key) {
+    const c = findCand(key);
+    if (!c) return;
+    openModal(`
+      <h2>No seleccionar a ${esc(c.nombre)}</h2>
+      <p class="muted">El compromiso Primera Oportunidad es responder a todas las postulaciones. Deja una retroalimentación breve y útil: le ayuda a mejorar para la próxima.</p>
+      <form class="form" id="descForm">
+        <label class="field field--block"><span>Retroalimentación para ${esc(c.nombre.split(" ")[0])}</span>
+          <textarea name="fb" rows="4" required>${esc(FEEDBACK_DEFECTO)}</textarea></label>
+        <button class="btn btn--primary btn--block" type="submit">${ic("send")} Enviar respuesta</button>
+      </form>`);
+    $("#descForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fb = new FormData(e.target).get("fb").trim();
+      decidirCand(key, "no", fb || FEEDBACK_DEFECTO);
+    });
+  }
+
+  function openCandidato(key) {
+    let c = findCand(key);
+    if (!c) return;
+    // Al abrir el perfil, la postulación pasa de "Enviada" a "Vista"
+    if (c.post.estado === 0 && !c.post.resultado) {
+      cambiarEstado(c, 1);
+      refrescarEmpresa();
+      avisoJoven(c);
+      c = findCand(key);
+    }
+    const o = getOferta(c.post.ofertaId);
+    openModal(`
+      <div class="cand">
+        <div class="cand__head">
+          <div class="avatar">${initials(c.nombre)}</div>
+          <div>
+            <h2>${esc(c.nombre)}</h2>
+            <p class="muted">${esc(c.carrera)} · ${esc(c.ciudad)} · ${esc(c.graduacion)}</p>
+          </div>
+        </div>
+        <p class="small muted">Postuló a <b>${esc(o?.titulo || "")}</b></p>
+        ${c.bio ? `<p>${esc(c.bio)}</p>` : ""}
+        ${c.habilidades.length ? `<h4>Habilidades</h4><div class="tags">${c.habilidades.map((h) => `<span class="tag">${esc(h)}</span>`).join("")}</div>` : ""}
+        <h4>${ic("award")} Cursos certificados (${c.cursos.length})</h4>
+        ${c.cursos.length ? `<ul class="ticks">${c.cursos.map((t) => `<li>${ic("check")} ${esc(t)}</li>`).join("")}</ul>` : `<p class="muted small">Aún no completa cursos en Puente Joven.</p>`}
+        <h4>Pasantías y proyectos</h4>
+        ${c.experiencias.length ? `<ul class="timeline">${c.experiencias.map((x) => `<li><span class="badge badge--sand">${esc(x.tipo)}</span><b>${esc(x.titulo)}</b><p>${esc(x.logro)}</p></li>`).join("")}</ul>` : `<p class="muted small">Sin experiencias registradas todavía.</p>`}
+        <h4>${ic("star")} Recomendaciones de mentores (${c.nRecos})</h4>
+        ${c.recosList.length ? c.recosList.map((r) => `<p class="small">“${esc(r.texto)}” <b>— ${esc(r.mentor)}</b></p>`).join("") : c.nRecos ? `<p class="muted small">Tiene ${c.nRecos} recomendación verificada.</p>` : `<p class="muted small">Sin recomendaciones todavía.</p>`}
+        ${stepper(c.post)}
+        <div class="app__actions" id="candActions">${candActions(c)}</div>
+      </div>`);
+    // Los botones del modal están fuera del panel: se escuchan aquí
+    $("#candActions").addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.dataset.avanzar) { avanzarCand(key); openCandidato(key); }
+      if (b.dataset.seleccionar) decidirCand(key, "si");
+      if (b.dataset.descartar) openDescartar(key);
+    });
+  }
+
+  function renderPanelEmpresa() {
+    const e = state.empresa;
+    $("#pAvatar").textContent = initials(e.nombre.replace(/\(.*\)/, ""));
+    $("#pName").textContent = e.nombre;
+    $("#pMeta").textContent = [e.sector, e.ciudad, e.tamano].filter(Boolean).join(" · ");
+    $("#eBio").textContent = e.descripcion || "Agrega una descripción de tu empresa.";
+    $("#eContacto").innerHTML = e.contacto ? `${ic("send")} ${esc(e.contacto)}` : "";
+
+    const ofertas = misOfertas();
+    const todos = ofertas.flatMap((o) => postulantesDe(o.id));
+    const nuevas = todos.filter((c) => c.post.estado === 0 && !c.post.resultado).length;
+    const respondidas = todos.filter((c) => c.post.resultado).length;
+    const conSello = ofertas.some((o) => o.primeraOportunidad);
+
+    $("#eSello").innerHTML = conSello
+      ? `<p class="note note--green">${ic("shield")} <span><b>Sello Primera Oportunidad activo.</b> Tus ofertas lo muestran en la bolsa de empleos.</span></p>`
+      : `<p class="note">${ic("shield")} <span>Publica una oferta que cumpla los 3 compromisos para obtener el sello.</span></p>`;
+
+    $("#eKpis").innerHTML = [
+      [ofertas.length, "Ofertas publicadas"],
+      [todos.length, "Postulantes"],
+      [nuevas, "Sin revisar"],
+      [respondidas, "Con respuesta final"],
+    ].map(([n, l], i) => `<div class="kpi ${i === 2 && n ? "kpi--alert" : ""}"><b>${n}</b><span>${l}</span></div>`).join("");
+
+    $("#eCompromiso").innerHTML = nuevas
+      ? `<p class="note">${ic("bell")} <span>Tienes <b>${nuevas} ${nuevas === 1 ? "postulación" : "postulaciones"} sin revisar</b>. Responder a todos es parte del compromiso Primera Oportunidad.</span></p>`
+      : `<p class="note note--green">${ic("check")} <span>Estás al día: revisaste todas las postulaciones.</span></p>`;
+
+    // Mis ofertas
+    if (!ofertas.some((o) => o.id === empSel)) {
+      empSel = (ofertas.find((o) => postulantesDe(o.id).length) || ofertas[0])?.id || null;
+    }
+    $("#eOfertas").innerHTML = ofertas.length ? ofertas.map((o) => {
+      const ps = postulantesDe(o.id);
+      const nv = ps.filter((c) => c.post.estado === 0 && !c.post.resultado).length;
+      return `
+        <button class="eoffer ${o.id === empSel ? "is-selected" : ""}" data-sel-oferta="${o.id}" aria-pressed="${o.id === empSel}">
+          <div class="eoffer__main">
+            <div class="job__badges">
+              <span class="badge ${o.tipo === "Pasantía" ? "badge--sand" : "badge--navy"}">${o.tipo}</span>
+              <span class="badge badge--line">${o.modalidad}</span>
+              ${o.primeraOportunidad ? `<span class="badge badge--seal">${ic("shield")} Primera Oportunidad</span>` : ""}
+            </div>
+            <b>${esc(o.titulo)}</b>
+            <small>${esc(o.ciudad)} · ${money(o.salario)}/mes · ${hace(o.dias)}</small>
+          </div>
+          <div class="eoffer__count">
+            <b>${ps.length}</b><span>postulante${ps.length === 1 ? "" : "s"}</span>
+            ${nv ? `<span class="badge badge--sand">${nv} nueva${nv === 1 ? "" : "s"}</span>` : ""}
+          </div>
+        </button>`;
+    }).join("") : `<div class="empty">${ic("briefcase")}<p>Aún no publicas ofertas. <a href="#empresas">Publica la primera</a>.</p></div>`;
+
+    // Postulantes de la oferta seleccionada
+    const sel = empSel && getOferta(empSel);
+    $("#eCandsTitle").textContent = sel ? `Postulantes · ${sel.titulo}` : "Postulantes";
+    const cands = sel ? postulantesDe(sel.id) : [];
+    $("#eCandList").innerHTML = !sel
+      ? `<p class="muted">Selecciona una oferta para ver a sus postulantes.</p>`
+      : cands.length ? cands.map((c) => `
+        <div class="app cand-row">
+          <div class="app__head">
+            <div class="cand-row__who">
+              <div class="avatar avatar--sm">${initials(c.nombre)}</div>
+              <div>
+                <b>${esc(c.nombre)} ${c.esJoven ? `<span class="badge badge--seal">Perfil del modo joven</span>` : ""}</b>
+                <small>${esc(c.carrera)} · ${esc(c.ciudad)} · ${esc(c.graduacion)}</small>
+              </div>
+            </div>
+            <span class="badge ${c.post.resultado === "si" ? "badge--green" : c.post.estado === 0 ? "badge--sand" : "badge--navy"}">${c.post.estado === 0 && !c.post.resultado ? "Nueva" : estadoLabel(c.post)}</span>
+          </div>
+          <ul class="job__meta cand-row__meta">
+            <li>${ic("award")} ${c.cursos.length} curso${c.cursos.length === 1 ? "" : "s"} certificado${c.cursos.length === 1 ? "" : "s"}</li>
+            <li>${ic("briefcase")} ${c.experiencias.length} experiencia${c.experiencias.length === 1 ? "" : "s"}</li>
+            <li>${ic("star")} ${c.nRecos} recomendaci${c.nRecos === 1 ? "ón" : "ones"}</li>
+            <li>${ic("clock")} Postuló el ${fecha(c.post.fechas[0])}</li>
+          </ul>
+          <div class="app__actions">
+            <button class="btn btn--primary btn--sm" data-ver-cand="${c.key}">${ic("user")} Ver perfil</button>
+            ${candActions(c)}
+          </div>
+        </div>`).join("")
+      : `<div class="empty">${ic("users")}<p>Esta oferta aún no recibe postulaciones.</p></div>`;
+  }
+
+  function openCompanyForm() {
+    const e = state.empresa;
+    openModal(`
+      <h2>Editar empresa</h2>
+      <form class="form" id="empForm">
+        <label class="field field--block"><span>Nombre de la empresa</span><input name="nombre" required value="${esc(e.nombre)}" /></label>
+        <div class="form__row">
+          <label class="field field--block"><span>Sector</span><input name="sector" value="${esc(e.sector)}" placeholder="Ej.: Comercio, Tecnología" /></label>
+          <label class="field field--block"><span>Ciudad</span><select name="ciudad">${CIUDADES.map((c) => `<option ${c === e.ciudad ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+        </div>
+        <label class="field field--block"><span>Tamaño</span>
+          <select name="tamano">${["1 a 10 empleados", "11 a 50 empleados", "50 a 200 empleados", "Más de 200 empleados"].map((t) => `<option ${t === e.tamano ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+        <label class="field field--block"><span>Sobre la empresa</span><textarea name="descripcion" rows="3">${esc(e.descripcion)}</textarea></label>
+        <label class="field field--block"><span>Correo de contacto</span><input name="contacto" type="email" value="${esc(e.contacto)}" /></label>
+        <button class="btn btn--primary btn--block" type="submit">Guardar cambios</button>
+      </form>`);
+    $("#empForm").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const fd = new FormData(ev.target);
+      Object.assign(state.empresa, {
+        nombre: fd.get("nombre").trim() || e.nombre,
+        sector: fd.get("sector").trim(),
+        ciudad: fd.get("ciudad"),
+        tamano: fd.get("tamano"),
+        descripcion: fd.get("descripcion").trim(),
+        contacto: fd.get("contacto").trim(),
+      });
+      save(); closeModal(); renderPanel();
+      toast("Datos de la empresa actualizados");
+    });
+  }
+
+  // "Ver postulantes" desde Empleos o desde el aviso de oferta publicada
+  document.addEventListener("click", (e) => {
+    const v = e.target.closest("[data-ver-oferta]");
+    if (v) empSel = v.dataset.verOferta;
+  });
+
   renderers.panel = renderPanel;
 
   /* =========================================================
@@ -865,6 +1217,15 @@
      ========================================================= */
   fillSelect($("#fCarrera"), CARRERAS, false);
   fillSelect($("#fCiudad"), CIUDADES, false);
+
+  // El formulario usa los datos del perfil de empresa
+  function prefillCompanyForm() {
+    const f = $("#companyForm");
+    if (!f.empresa.value.trim()) f.empresa.value = state.empresa.nombre;
+    if (!f.dataset.touched) f.ciudad.value = state.empresa.ciudad;
+  }
+  $("#companyForm").addEventListener("input", (e) => { if (e.target.name === "ciudad") e.currentTarget.dataset.touched = "1"; });
+  renderers.empresas = prefillCompanyForm;
 
   $("#companyForm").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -896,8 +1257,14 @@
       requisitos: [fd.get("sinExp") ? "Sin experiencia previa requerida" : "Perfil junior", fd.get("tutor") ? "Tendrás tutor y plan de aprendizaje" : "Ganas de aprender"],
     };
     state.ofertasEmpresa.unshift(oferta);
+    // Quien publica es una empresa: se actualiza su nombre y pasa al rol empresa
+    state.empresa.nombre = oferta.empresa;
+    empSel = oferta.id;
     save();
+    setRol("empresa", true);
     form.reset();
+    delete form.dataset.touched;
+    prefillCompanyForm();
     setFilters({}); // para que la nueva oferta se vea al ir a Empleos
 
     // Avisar si coincide con alguna alerta del joven
@@ -911,7 +1278,10 @@
         ${sello
           ? `<p class="note note--green">${ic("shield")} Cumples los 3 compromisos: tu oferta muestra el sello <b>Empresa Primera Oportunidad</b>.</p>`
           : `<p class="note">${ic("sparkle")} Marca los 3 compromisos en tu próxima oferta para obtener el sello Primera Oportunidad.</p>`}
-        <a href="#empleos" class="btn btn--primary" data-close>Ver en Empleos ${ic("arrow")}</a>
+        <div class="row-gap row-gap--center">
+          <a href="#panel" class="btn btn--primary" data-close data-ver-oferta="${oferta.id}">${ic("building")} Ir a Mi empresa</a>
+          <a href="#empleos" class="btn btn--outline" data-close>Ver en Empleos ${ic("arrow")}</a>
+        </div>
       </div>`);
     if (coincide) setTimeout(() => toast("🔔 Nueva oferta coincide con una alerta de jóvenes", "info"), 600);
   });
@@ -925,7 +1295,7 @@
   const staggerObs = new MutationObserver((muts) =>
     muts.forEach((m) => [...m.target.children].forEach((c, i) => c.style.setProperty("--i", Math.min(i, 10))))
   );
-  ["#courseGrid", "#jobList", "#mentorGrid", "#testiGrid", "#pApps"].forEach((s) => staggerObs.observe($(s), { childList: true }));
+  ["#courseGrid", "#jobList", "#mentorGrid", "#testiGrid", "#pApps", "#eOfertas", "#eCandList"].forEach((s) => staggerObs.observe($(s), { childList: true }));
 
   if (fineMotion) {
     // Luz suave que sigue al mouse dentro de las tarjetas
