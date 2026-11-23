@@ -18,7 +18,19 @@
   const expTxt = (m) => (!m ? "Sin experiencia requerida" : m % 12 === 0 ? `${m / 12} año${m === 12 ? "" : "s"} de experiencia` : `${m} meses de experiencia`);
   const esRemoto = (o) => o.modalidad === "Remoto";
   const lugar = (o) => [o.ciudad, o.zona].filter(Boolean).join(" · ");
-  const mapaUrl = (o) => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(`${o.zona}, ${o.ciudad}, Ecuador`);
+  // Mapa: se muestra dentro de la página (iframe) y un botón abre la ruta en Google Maps
+  const tieneMapa = (o) => !!o.zona && !esRemoto(o);
+  const destino = (o) => encodeURIComponent(`${o.zona}, ${o.ciudad}, Ecuador`);
+  const mapaEmbed = (o) => `https://maps.google.com/maps?q=${destino(o)}&z=15&output=embed`;
+  const rutaUrl = (o) => `https://www.google.com/maps/dir/?api=1&destination=${destino(o)}`;
+  const mapaHtml = (o) => `
+    <div class="map">
+      <iframe class="map__frame" src="${mapaEmbed(o)}" title="Mapa de ${esc(o.zona)}, ${esc(o.ciudad)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+      <div class="map__bar">
+        <small class="muted">${ic("pin")} Ubicación aproximada del barrio. La dirección exacta se confirma con la empresa.</small>
+        <a class="btn btn--accent btn--sm" href="${rutaUrl(o)}" target="_blank" rel="noopener">${ic("arrow")} Cómo llegar</a>
+      </div>
+    </div>`;
   const selloVerif = (o) => (o.verificada
     ? `<span class="badge badge--green">${ic("check")} Empresa verificada</span>`
     : `<span class="badge badge--line">En verificación</span>`);
@@ -676,6 +688,7 @@
           <p class="job__desc">${esc(o.descripcion)}</p>
         </div>
         <div class="job__actions">
+          ${tieneMapa(o) ? `<button class="btn btn--ghost btn--sm" data-map="${o.id}">${ic("pin")} Ver ubicación</button>` : ""}
           <button class="btn btn--ghost btn--sm" data-detail="${o.id}">Ver detalle</button>
           ${jobAction(o, post)}
         </div>
@@ -713,7 +726,18 @@
   $("#jobList").addEventListener("click", (e) => {
     const a = e.target.closest("[data-apply]");
     const d = e.target.closest("[data-detail]");
+    const m = e.target.closest("[data-map]");
     if (a) { apply(a.dataset.apply); renderJobs(); }
+    if (m) {
+      const o = getOferta(m.dataset.map);
+      openModal(`
+        <h2>${esc(o.titulo)}</h2>
+        <p class="muted">${esc(o.empresa)} · ${esc(lugar(o))}</p>
+        ${mapaHtml(o)}
+        <button class="btn btn--ghost btn--block" data-detail-from-map="${o.id}">Ver detalle de la oferta</button>
+      `);
+      $("[data-detail-from-map]")?.addEventListener("click", () => $(`#jobList [data-detail="${o.id}"]`)?.click());
+    }
     if (d) {
       const o = getOferta(d.dataset.detail);
       const post = state.postulaciones.find((p) => p.ofertaId === o.id);
@@ -727,11 +751,12 @@
         <h2>${esc(o.titulo)}</h2>
         <p class="muted">${esc(o.empresa)}${o.industria ? ` · ${esc(o.industria)}` : ""}</p>
         <dl class="job__facts">
-          <div><dt>${ic("pin")} Ubicación</dt><dd>${esc(lugar(o))}${o.zona && !esRemoto(o) ? ` · <a href="${mapaUrl(o)}" target="_blank" rel="noopener">Ver en el mapa</a>` : ""}</dd></div>
+          <div><dt>${ic("pin")} Ubicación</dt><dd>${esc(lugar(o))}</dd></div>
           ${o.horario ? `<div><dt>${ic("calendar")} Horario</dt><dd>${esc(o.horario)}</dd></div>` : ""}
           <div><dt>${ic("briefcase")} Experiencia</dt><dd>${expTxt(o.experiencia)}</dd></div>
           <div><dt>${ic("dollar")} Salario</dt><dd>${money(o.salario)}/mes</dd></div>
         </dl>
+        ${tieneMapa(o) ? mapaHtml(o) : ""}
         <p>${esc(o.descripcion)}</p>
         <h4>Lo que buscamos</h4>
         <ul class="ticks">${o.requisitos.map((r) => `<li>${ic("check")} ${esc(r)}</li>`).join("")}</ul>

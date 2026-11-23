@@ -34,7 +34,7 @@ Mientras no existan, se muestran las iniciales.
 
 ## Ofertas más completas (2da validación, nov. 2026)
 Después de entrevistar a Salomé, José Ignacio, Julián, Aida y Patricia, cada oferta ahora muestra:
-- **Barrio o sector** además de la ciudad, con enlace "Ver en el mapa" en el detalle.
+- **Barrio o sector** además de la ciudad. El botón "Ver ubicación" muestra el mapa dentro de la página y "Cómo llegar" abre la ruta en Google Maps.
 - **Horario** de trabajo e **industria** de la empresa.
 - **Experiencia requerida** (en verde cuando no pide ninguna).
 - Sello **Empresa verificada** (RUC, dirección y referencias revisadas) o "En verificación".
