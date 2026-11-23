@@ -61,6 +61,8 @@
       alertas: [],
       ofertasEmpresa: [],
       simPracticas: 0,
+      // Acompañamiento después de conseguir empleo: { [ofertaId]: { respuestas: [], cerrado } }
+      acomp: {},
       // Rol activo: "joven" (busca empleo) o "empresa" (publica ofertas)
       rol: "joven",
       empresa: JSON.parse(JSON.stringify(EMPRESA_INICIAL)),
@@ -824,8 +826,9 @@
       ? `<b>${st.s}%</b> · Para fortalecerlo: ${st.faltan.join(", ")}.`
       : `<b>${st.s}%</b> · ¡Perfil completo! Las empresas ven tu potencial.`;
 
-    $("#pExp").innerHTML = p.experiencias.map((x) => `
-      <li><span class="badge badge--sand">${esc(x.tipo)}</span><b>${esc(x.titulo)}</b><small>${esc(x.lugar)}</small><p>${esc(x.logro)}</p></li>`).join("")
+    $("#pExp").innerHTML = p.experiencias.map((x, i) => `
+      <li><span class="badge badge--sand">${esc(x.tipo)}</span>${x.certificado ? ` <span class="badge badge--green">${ic("award")} Certificada</span>` : ""}<b>${esc(x.titulo)}</b><small>${esc(x.lugar)}</small><p>${esc(x.logro)}</p>
+        ${x.certificado ? `<button class="link-btn" data-cert-exp="${i}">${ic("award")} Ver certificado de pasantía</button>` : ""}</li>`).join("")
       + `<li class="timeline__add"><button class="btn btn--ghost btn--sm" id="pAddExp">${ic("plus")} Agregar pasantía o proyecto</button></li>`;
 
     const comp = state.cursos.completados.map((id) => CURSOS.find((c) => c.id === id)).filter(Boolean);
@@ -861,6 +864,9 @@
         </div>`;
     }).join("") : `<div class="empty">${ic("briefcase")}<p>Aún no tienes postulaciones. <a href="#empleos">Busca ofertas junior</a>.</p></div>`;
 
+    // Después de tu primer empleo: acompañamiento de 90 días y certificado de pasantía
+    renderDespues();
+
     // Recomendaciones
     $("#pRecos").innerHTML = state.recos.length ? state.recos.map((r) => `
       <blockquote class="reco">
@@ -890,6 +896,113 @@
     }).join("") : `<li class="muted">Aún no pides mentorías. <a href="#mentores">Ver mentores</a></li>`;
   }
 
+  /* ---------- Después de tu primer empleo ----------
+     Pedido en la 2da validación: José Ignacio y Aida quieren que el apoyo siga
+     después de conseguir trabajo; Salomé, que la pasantía dé un certificado. */
+  const CHECKINS = [
+    { t: "Primera semana", q: "¿Cómo te fue en tu primera semana de trabajo?" },
+    { t: "Primer mes", q: "¿Cómo van el ambiente laboral y tus responsabilidades?" },
+    { t: "Tercer mes", q: "¿Qué lograste estos meses y qué quieres aprender ahora?" },
+  ];
+  const ANIMO = { bien: "Me va bien", dudas: "Tengo algunas dudas", apoyo: "Necesito apoyo" };
+  const mentorPara = (o) => MENTORES.find((m) => m.area === o.carrera) || MENTORES[0];
+  const codigoPasantia = (o) => `PJ-PAS-${o.id.toUpperCase()}-${(state.perfil.nombre.length * 977).toString(36).toUpperCase()}`;
+
+  function renderDespues() {
+    const box = $("#pDespues");
+    if (!box) return;
+    const elegidas = state.postulaciones.filter((p) => p.resultado === "si").map((p) => getOferta(p.ofertaId)).filter(Boolean);
+    if (!elegidas.length) {
+      box.innerHTML = `
+        <p class="muted small">Puente Joven no te deja solo cuando consigues trabajo. Esto se activa cuando una empresa te selecciona:</p>
+        <ol class="after-steps">
+          <li>${ic("users")} <div><b>Un mentor te acompaña 90 días</b><small>Te ayuda a adaptarte a tus nuevas responsabilidades y al ambiente de trabajo.</small></div></li>
+          <li>${ic("calendar")} <div><b>3 conversaciones de seguimiento</b><small>Primera semana, primer mes y tercer mes.</small></div></li>
+          <li>${ic("award")} <div><b>Certificado de pasantía</b><small>Al terminar una pasantía, la empresa la certifica y aparece en tu perfil.</small></div></li>
+        </ol>`;
+      return;
+    }
+    box.innerHTML = elegidas.map((o) => {
+      const a = state.acomp[o.id] || { respuestas: [], cerrado: false };
+      const mt = mentorPara(o);
+      const hechos = a.respuestas.length;
+      const pas = o.tipo === "Pasantía";
+      return `
+        <div class="after">
+          <div class="after__head">
+            <div class="avatar avatar--sm" style="background:${mt.color}">${initials(mt.nombre)}</div>
+            <div><b>${esc(o.titulo)} · ${esc(o.empresa)}</b><small>Tu mentora/or de acompañamiento: ${esc(mt.nombre)}, ${esc(mt.cargo)}</small></div>
+            <span class="badge ${a.cerrado ? "badge--green" : "badge--seal"}">${a.cerrado ? "90 días completados" : `${hechos} de ${CHECKINS.length}`}</span>
+          </div>
+          <div class="meter"><div class="meter__bar" style="width:${Math.round((hechos / CHECKINS.length) * 100)}%"></div></div>
+          <ol class="checkins">
+            ${CHECKINS.map((c, i) => {
+              const r = a.respuestas[i];
+              const cls = r ? "is-done" : i === hechos ? "is-current" : "";
+              return `<li class="${cls}">
+                <span class="stepper__dot">${r ? ic("check") : i + 1}</span>
+                <div><b>${c.t}</b><small>${r ? `${ANIMO[r.animo]}${r.nota ? ` · “${esc(r.nota)}”` : ""}` : esc(c.q)}</small></div>
+                ${!r && i === hechos ? `<button class="btn btn--primary btn--sm" data-checkin="${o.id}">Responder</button>` : ""}
+              </li>`;
+            }).join("")}
+          </ol>
+          <div class="app__actions">
+            <button class="btn btn--outline btn--sm" data-talk-mentor="${o.id}">${ic("chat")} Hablar con mi mentor</button>
+            ${hechos === CHECKINS.length && !a.cerrado
+              ? (pas
+                ? `<button class="btn btn--green btn--sm" data-finish-acomp="${o.id}">${ic("award")} Terminar pasantía y recibir certificado</button>`
+                : `<button class="btn btn--green btn--sm" data-finish-acomp="${o.id}">${ic("check")} Cerrar mis primeros 90 días</button>`)
+              : ""}
+            ${a.cerrado && pas ? `<button class="link-btn" data-cert-pas="${o.id}">${ic("award")} Ver certificado</button>` : ""}
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  function showCertPasantia({ empresa, titulo, horas, codigo }) {
+    openModal(`
+      <div class="cert">
+        <div class="cert__seal">${ic("award")}</div>
+        <small>Certificado de pasantía</small>
+        <h2>${esc(state.perfil.nombre)}</h2>
+        <p>realizó la pasantía de</p>
+        <h3>${esc(titulo)}</h3>
+        <p class="muted">${horas} horas · emitido por ${esc(empresa)} y verificado por Puente Joven</p>
+        <p class="cert__code">Código de verificación: <b>${codigo}</b></p>
+      </div>`);
+  }
+
+  function openCheckin(o) {
+    const a = (state.acomp[o.id] ||= { respuestas: [], cerrado: false });
+    const c = CHECKINS[a.respuestas.length];
+    if (!c) return;
+    openModal(`
+      <span class="kicker">Seguimiento · ${c.t}</span>
+      <h2>${esc(c.q)}</h2>
+      <p class="muted">${esc(o.titulo)} · ${esc(o.empresa)}. Tu respuesta solo la ve tu mentor.</p>
+      <form id="checkinForm" class="form">
+        <div class="chips">
+          ${Object.entries(ANIMO).map(([k, v], i) => `<label class="chip"><input type="radio" name="animo" value="${k}" ${i === 0 ? "checked" : ""} />${v}</label>`).join("")}
+        </div>
+        <label class="field field--block"><span>¿Algo que quieras contarle a tu mentor? (opcional)</span><textarea name="nota" rows="3" placeholder="Ej.: Me cuesta organizar los reportes semanales."></textarea></label>
+        <button class="btn btn--primary btn--block" type="submit">${ic("send")} Enviar</button>
+      </form>`);
+    $("#checkinForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const animo = fd.get("animo");
+      a.respuestas.push({ animo, nota: String(fd.get("nota") || "").trim(), fecha: Date.now() });
+      if (animo === "apoyo") {
+        const mt = mentorPara(o);
+        state.mentorias.unshift({ mentorId: mt.id, tema: `Acompañamiento: ${c.t.toLowerCase()} en ${o.titulo}`, realizada: false });
+      }
+      save();
+      closeModal();
+      renderPanel();
+      toast(animo === "apoyo" ? `${mentorPara(o).nombre} te escribirá en menos de 24 horas.` : "¡Gracias! Tu mentor recibió tu seguimiento.");
+    });
+  }
+
   // Eventos del panel (delegación)
   $('[data-page="panel"]').addEventListener("click", (e) => {
     const t = e.target.closest("button, a");
@@ -912,6 +1025,36 @@
       toast("Postulación retirada", "info");
     }
     if (t.dataset.cert) showCert(t.dataset.cert);
+    if (t.dataset.certExp !== undefined) {
+      const x = state.perfil.experiencias[+t.dataset.certExp];
+      showCertPasantia({ ...x.certificado, titulo: x.titulo });
+    }
+    if (t.dataset.checkin) openCheckin(getOferta(t.dataset.checkin));
+    if (t.dataset.talkMentor) {
+      const o = getOferta(t.dataset.talkMentor);
+      const mt = mentorPara(o);
+      state.mentorias.unshift({ mentorId: mt.id, tema: `Acompañamiento en ${o.titulo}`, realizada: false });
+      save(); renderPanel();
+      toast(`Solicitud enviada a ${mt.nombre}. La verás en "Mentorías solicitadas".`);
+    }
+    if (t.dataset.finishAcomp) {
+      const o = getOferta(t.dataset.finishAcomp);
+      const a = state.acomp[o.id];
+      a.cerrado = true;
+      if (o.tipo === "Pasantía") {
+        const certificado = { empresa: o.empresa, horas: 480, codigo: codigoPasantia(o) };
+        state.perfil.experiencias.unshift({ tipo: "Pasantía", titulo: o.titulo, lugar: o.empresa, logro: "Pasantía completada con acompañamiento de Puente Joven durante 90 días.", certificado });
+        save(); renderPanel();
+        showCertPasantia({ ...certificado, titulo: o.titulo });
+      } else {
+        save(); renderPanel();
+        toast("¡Felicitaciones! Completaste tus primeros 90 días. Tu mentor sigue disponible cuando lo necesites.");
+      }
+    }
+    if (t.dataset.certPas) {
+      const o = getOferta(t.dataset.certPas);
+      showCertPasantia({ empresa: o.empresa, titulo: o.titulo, horas: 480, codigo: codigoPasantia(o) });
+    }
     if (t.dataset.delAlert !== undefined) {
       state.alertas.splice(+t.dataset.delAlert, 1);
       save(); renderPanel();

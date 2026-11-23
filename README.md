@@ -41,6 +41,12 @@ Después de entrevistar a Salomé, José Ignacio, Julián, Aida y Patricia, cada
 - Filtros nuevos: "Solo sin experiencia requerida" y "Solo empresas verificadas". El buscador también encuentra barrios.
 - El formulario "Publicar oferta" pide barrio, horario y experiencia.
 
+## Después de tu primer empleo (2da validación)
+En "Mi panel" del joven:
+- **Acompañamiento de 90 días**: cuando una empresa selecciona al joven, se le asigna un mentor de su área y tiene 3 seguimientos (primera semana, primer mes, tercer mes). Si responde "Necesito apoyo", se crea una mentoría.
+- **Certificado de pasantía**: al cerrar el acompañamiento de una pasantía, la empresa emite un certificado que aparece en "Pasantías y proyectos".
+- Para probarlo: en "Mis postulaciones" usa "Simular respuesta de la empresa" en la pasantía de Grupo Pacífico hasta que salga seleccionada.
+
 ## Datos guardados
 Postulaciones, cursos, alertas y ofertas publicadas se guardan en el navegador (localStorage).
 En "Mi panel" → "Restablecer datos de ejemplo" vuelve al estado inicial.

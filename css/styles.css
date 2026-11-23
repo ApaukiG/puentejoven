@@ -832,3 +832,20 @@ input[type="range"] { accent-color: var(--coral-ink); padding: 0; min-height: 30
   .float-card--b { bottom: 0; }
   .float-card--c { display: none; }
 }
+
+/* ---------- Después de tu primer empleo ---------- */
+.after-steps { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 12px; }
+.after-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.after-steps li > .i { color: var(--coral-ink); width: 1.4em; height: 1.4em; margin-top: .1em; }
+.after-steps small, .checkins small, .after__head small { display: block; color: var(--muted); font-size: .85rem; }
+.after { display: grid; gap: 14px; }
+.after + .after { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 18px; }
+.after__head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.after__head > div:nth-child(2) { flex: 1 1 200px; }
+.after__head .avatar { color: #fff; }
+.checkins { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.checkins li { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 12px; background: var(--paper-2); }
+.checkins li > div { flex: 1; }
+.checkins li:not(.is-done):not(.is-current) { opacity: .6; }
+.checkins li.is-done .stepper__dot { background: var(--green); color: #fff; border-color: var(--green); }
+.checkins li.is-current { outline: 2px solid var(--lilac-ink); outline-offset: -2px; }

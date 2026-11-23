@@ -183,7 +183,9 @@ const PERFIL_INICIAL = {
   bio: "Recién graduada en Administración. Me gusta organizar procesos y aprender herramientas digitales.",
   habilidades: ["Excel intermedio", "Atención al cliente", "Trabajo en equipo", "Inglés A2", "Canva"],
   experiencias: [
-    { tipo: "Pasantía", titulo: "Pasante de talento humano", lugar: "Cooperativa local (ejemplo)", logro: "Organicé 120 expedientes de personal y reduje el tiempo de búsqueda de documentos." },
+    { tipo: "Pasantía", titulo: "Pasante de talento humano", lugar: "Cooperativa local (ejemplo)", logro: "Organicé 120 expedientes de personal y reduje el tiempo de búsqueda de documentos.",
+      // Certificado emitido por la empresa al terminar la pasantía (pedido de Salomé)
+      certificado: { empresa: "Cooperativa local (ejemplo)", horas: 480, codigo: "PJ-PAS-COOP-24A7" } },
     { tipo: "Proyecto", titulo: "Plan de negocio para tienda familiar", lugar: "Proyecto de titulación", logro: "Diseñé un control de inventario en Excel que hoy usa el negocio." },
     { tipo: "Voluntariado", titulo: "Logística de feria universitaria", lugar: "Universidad", logro: "Coordiné a 8 voluntarios para un evento de 300 asistentes." },
   ],
