@@ -14,6 +14,14 @@
   const money = (n) => `$${Number(n).toLocaleString("es-EC")}`;
   const fecha = (iso) => new Date(iso).toLocaleDateString("es-EC", { day: "numeric", month: "short" });
   const hace = (d) => (d === 0 ? "Hoy" : d === 1 ? "Hace 1 día" : `Hace ${d} días`);
+  // Experiencia que pide una oferta (en meses). 0 o vacío = ninguna.
+  const expTxt = (m) => (!m ? "Sin experiencia requerida" : m % 12 === 0 ? `${m / 12} año${m === 12 ? "" : "s"} de experiencia` : `${m} meses de experiencia`);
+  const esRemoto = (o) => o.modalidad === "Remoto";
+  const lugar = (o) => [o.ciudad, o.zona].filter(Boolean).join(" · ");
+  const mapaUrl = (o) => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(`${o.zona}, ${o.ciudad}, Ecuador`);
+  const selloVerif = (o) => (o.verificada
+    ? `<span class="badge badge--green">${ic("check")} Empresa verificada</span>`
+    : `<span class="badge badge--line">En verificación</span>`);
   const DAY = 86400000;
 
   const fillSelect = (el, values, keepFirst = true) => {
@@ -587,6 +595,8 @@
       tipo: $$("#jTipo input:checked").map((i) => i.value),
       salario: Number($("#jSalario").value),
       sello: $("#jSello").checked,
+      sinExp: $("#jSinExp").checked,
+      verificada: $("#jVerif").checked,
     };
   }
   function setFilters(f) {
@@ -597,16 +607,21 @@
     $$("#jTipo input").forEach((i) => (i.checked = (f.tipo || []).includes(i.value)));
     $("#jSalario").value = f.salario || 0;
     $("#jSello").checked = !!f.sello;
+    $("#jSinExp").checked = !!f.sinExp;
+    $("#jVerif").checked = !!f.verificada;
   }
   function matches(o, f) {
     const q = (f.q || "").toLowerCase();
-    return (!q || o.titulo.toLowerCase().includes(q) || o.empresa.toLowerCase().includes(q)) &&
+    const texto = [o.titulo, o.empresa, o.zona, o.industria].filter(Boolean).join(" ").toLowerCase();
+    return (!q || texto.includes(q)) &&
       (!f.carrera || o.carrera === f.carrera) &&
       (!f.ciudad || o.ciudad === f.ciudad) &&
       (!f.modalidad?.length || f.modalidad.includes(o.modalidad)) &&
       (!f.tipo?.length || f.tipo.includes(o.tipo)) &&
       (o.salario >= (f.salario || 0)) &&
-      (!f.sello || o.primeraOportunidad);
+      (!f.sello || o.primeraOportunidad) &&
+      (!f.sinExp || !o.experiencia) &&
+      (!f.verificada || o.verificada);
   }
   const describeFilters = (f) => {
     const p = [];
@@ -617,6 +632,8 @@
     if (f.tipo?.length) p.push(f.tipo.join("/"));
     if (f.salario) p.push(`desde ${money(f.salario)}`);
     if (f.sello) p.push("Primera Oportunidad");
+    if (f.sinExp) p.push("Sin experiencia");
+    if (f.verificada) p.push("Empresas verificadas");
     return p.length ? p.join(" · ") : "Todas las ofertas";
   };
 
@@ -643,13 +660,16 @@
             <span class="badge ${o.tipo === "Pasantía" ? "badge--sand" : "badge--navy"}">${o.tipo}</span>
             <span class="badge badge--line">${o.modalidad}</span>
             ${o.primeraOportunidad ? `<span class="badge badge--seal">${ic("shield")} Primera Oportunidad</span>` : ""}
+            ${selloVerif(o)}
             ${o.nueva ? `<span class="badge badge--green">Nueva</span>` : ""}
             ${state.rol === "empresa" && esPropia(o.id) ? `<span class="badge badge--sand">${ic("building")} Tu oferta</span>` : ""}
           </div>
           <h3>${esc(o.titulo)}</h3>
-          <p class="job__company">${esc(o.empresa)}</p>
+          <p class="job__company">${esc(o.empresa)}${o.industria ? ` · <span class="muted">${esc(o.industria)}</span>` : ""}</p>
           <ul class="job__meta">
-            <li>${ic("pin")} ${esc(o.ciudad)}</li>
+            <li>${ic("pin")} ${esc(lugar(o))}</li>
+            ${o.horario ? `<li>${ic("calendar")} ${esc(o.horario)}</li>` : ""}
+            <li class="${o.experiencia ? "" : "job__meta--ok"}">${ic("briefcase")} ${expTxt(o.experiencia)}</li>
             <li>${ic("dollar")} ${money(o.salario)}/mes</li>
             <li>${ic("clock")} ${hace(o.dias)}</li>
           </ul>
@@ -671,7 +691,7 @@
       ? list.map(jobCard).join("")
       : `<div class="empty">${ic("search")}<p>No encontramos ofertas con estos filtros. Crea una alerta y te avisaremos cuando aparezca una.</p></div>`;
   }
-  ["#jSearch", "#jCarrera", "#jCiudad", "#jSalario", "#jSello"].forEach((s) => $(s).addEventListener("input", renderJobs));
+  ["#jSearch", "#jCarrera", "#jCiudad", "#jSalario", "#jSello", "#jSinExp", "#jVerif"].forEach((s) => $(s).addEventListener("input", renderJobs));
   $$("#jModalidad input, #jTipo input").forEach((i) => i.addEventListener("change", renderJobs));
   $("#jClear").addEventListener("click", () => { setFilters({}); renderJobs(); });
   $("#jToggle").addEventListener("click", () => $(".jobs__filters").classList.toggle("is-open"));
@@ -702,13 +722,23 @@
           <span class="badge ${o.tipo === "Pasantía" ? "badge--sand" : "badge--navy"}">${o.tipo}</span>
           <span class="badge badge--line">${o.modalidad}</span>
           ${o.primeraOportunidad ? `<span class="badge badge--seal">${ic("shield")} Primera Oportunidad</span>` : ""}
+          ${selloVerif(o)}
         </div>
         <h2>${esc(o.titulo)}</h2>
-        <p class="muted">${esc(o.empresa)} · ${esc(o.ciudad)} · ${money(o.salario)}/mes</p>
+        <p class="muted">${esc(o.empresa)}${o.industria ? ` · ${esc(o.industria)}` : ""}</p>
+        <dl class="job__facts">
+          <div><dt>${ic("pin")} Ubicación</dt><dd>${esc(lugar(o))}${o.zona && !esRemoto(o) ? ` · <a href="${mapaUrl(o)}" target="_blank" rel="noopener">Ver en el mapa</a>` : ""}</dd></div>
+          ${o.horario ? `<div><dt>${ic("calendar")} Horario</dt><dd>${esc(o.horario)}</dd></div>` : ""}
+          <div><dt>${ic("briefcase")} Experiencia</dt><dd>${expTxt(o.experiencia)}</dd></div>
+          <div><dt>${ic("dollar")} Salario</dt><dd>${money(o.salario)}/mes</dd></div>
+        </dl>
         <p>${esc(o.descripcion)}</p>
         <h4>Lo que buscamos</h4>
         <ul class="ticks">${o.requisitos.map((r) => `<li>${ic("check")} ${esc(r)}</li>`).join("")}</ul>
         ${o.primeraOportunidad ? `<p class="note">${ic("shield")} Esta empresa no exige experiencia previa y se compromete a responder a todas las postulaciones.</p>` : ""}
+        ${o.verificada
+          ? `<p class="note note--green">${ic("check")} Puente Joven verificó el RUC, la dirección y las referencias de esta empresa.</p>`
+          : `<p class="note">${ic("clock")} Estamos verificando a esta empresa. Antes de una entrevista presencial, confirma la dirección y nunca pagues para postular.</p>`}
         ${jobAction(o, post, true)}
       `);
       $("#modalApply")?.addEventListener("click", () => { apply(o.id); closeModal(); renderJobs(); });
@@ -1241,6 +1271,7 @@
     }
     err.hidden = true;
     const sello = !!(fd.get("sinExp") && fd.get("tutor") && fd.get("responder"));
+    const experiencia = fd.get("sinExp") ? 0 : Number(fd.get("experiencia") || 0);
     const oferta = {
       id: "e" + Date.now(),
       titulo: fd.get("titulo").trim(),
@@ -1248,13 +1279,18 @@
       carrera: fd.get("carrera"),
       ciudad: fd.get("ciudad"),
       modalidad: fd.get("modalidad"),
+      zona: String(fd.get("zona") || "").trim(),
+      horario: String(fd.get("horario") || "").trim(),
+      industria: state.empresa.sector || "",
+      experiencia,
+      verificada: state.empresa.verificada !== false,
       salario: Math.max(0, Number(fd.get("salario"))),
       tipo: fd.get("tipo"),
       primeraOportunidad: sello,
       dias: 0,
       nueva: true,
       descripcion: fd.get("descripcion").trim(),
-      requisitos: [fd.get("sinExp") ? "Sin experiencia previa requerida" : "Perfil junior", fd.get("tutor") ? "Tendrás tutor y plan de aprendizaje" : "Ganas de aprender"],
+      requisitos: [experiencia ? expTxt(experiencia) : "Sin experiencia previa requerida", fd.get("tutor") ? "Tendrás tutor y plan de aprendizaje" : "Ganas de aprender"],
     };
     state.ofertasEmpresa.unshift(oferta);
     // Quien publica es una empresa: se actualiza su nombre y pasa al rol empresa

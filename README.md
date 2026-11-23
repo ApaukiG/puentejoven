@@ -32,6 +32,15 @@ Mientras no existan, se muestran las iniciales.
 - El ciclo está conectado: lo que la empresa responde a Camila (la joven de ejemplo) aparece en el panel de joven.
 - Datos de ejemplo de la empresa y de otros postulantes: `EMPRESA_INICIAL` y `CANDIDATOS` en `js/data.js`.
 
+## Ofertas más completas (2da validación, nov. 2026)
+Después de entrevistar a Salomé, José Ignacio, Julián, Aida y Patricia, cada oferta ahora muestra:
+- **Barrio o sector** además de la ciudad, con enlace "Ver en el mapa" en el detalle.
+- **Horario** de trabajo e **industria** de la empresa.
+- **Experiencia requerida** (en verde cuando no pide ninguna).
+- Sello **Empresa verificada** (RUC, dirección y referencias revisadas) o "En verificación".
+- Filtros nuevos: "Solo sin experiencia requerida" y "Solo empresas verificadas". El buscador también encuentra barrios.
+- El formulario "Publicar oferta" pide barrio, horario y experiencia.
+
 ## Datos guardados
 Postulaciones, cursos, alertas y ofertas publicadas se guardan en el navegador (localStorage).
 En "Mi panel" → "Restablecer datos de ejemplo" vuelve al estado inicial.

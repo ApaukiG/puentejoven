@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css?v=2" />
+  <link rel="stylesheet" href="css/styles.css?v=3" />
 </head>
 <body>
 
@@ -529,7 +529,7 @@
         <h3>Filtros</h3>
         <label class="field field--block field--search">
           <svg class="i"><use href="#i-search"/></svg>
-          <input type="search" id="jSearch" placeholder="Cargo o empresa" aria-label="Buscar cargo o empresa" />
+          <input type="search" id="jSearch" placeholder="Cargo, empresa o barrio" aria-label="Buscar cargo, empresa o barrio" />
         </label>
         <label class="field field--block"><span>Carrera</span><select id="jCarrera"><option value="">Todas</option></select></label>
         <label class="field field--block"><span>Ciudad</span><select id="jCiudad"><option value="">Todas</option></select></label>
@@ -553,6 +553,8 @@
           <input type="range" id="jSalario" min="0" max="800" step="50" value="0" />
         </label>
         <label class="check"><input type="checkbox" id="jSello" /> Solo Empresa Primera Oportunidad</label>
+        <label class="check"><input type="checkbox" id="jSinExp" /> Solo sin experiencia requerida</label>
+        <label class="check"><input type="checkbox" id="jVerif" /> Solo empresas verificadas</label>
         <div class="jobs__filter-actions">
           <button class="btn btn--primary btn--block" id="jAlert"><svg class="i"><use href="#i-bell"/></svg> Crear alerta con estos filtros</button>
           <button class="btn btn--ghost btn--block" id="jClear">Limpiar filtros</button>
@@ -761,6 +763,12 @@
           <label class="field field--block"><span>Modalidad *</span>
             <select name="modalidad" required><option>Presencial</option><option>Híbrido</option><option>Remoto</option></select></label>
         </div>
+        <div class="form__row">
+          <label class="field field--block"><span>Barrio o sector</span><input name="zona" placeholder="Ej.: La Carolina, norte de Quito" /></label>
+          <label class="field field--block"><span>Horario</span><input name="horario" placeholder="Ej.: L–V · 8:00–17:00" /></label>
+        </div>
+        <label class="field field--block"><span>Experiencia que pides</span>
+          <select name="experiencia"><option value="0">Ninguna</option><option value="6">6 meses</option><option value="12">1 año</option><option value="24">2 años</option></select></label>
         <label class="field field--block"><span>Salario o apoyo mensual (USD) *</span><input name="salario" type="number" min="0" required placeholder="Ej.: 500" /></label>
         <label class="field field--block"><span>Descripción *</span><textarea name="descripcion" rows="3" required placeholder="¿Qué aprenderá y hará la persona?"></textarea></label>
         <fieldset class="field field--block">
@@ -869,7 +877,7 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/data.js?v=2"></script>
-<script src="js/app.js?v=2"></script>
+<script src="js/data.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
 </body>
 </html>
