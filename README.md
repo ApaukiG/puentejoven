@@ -47,6 +47,10 @@ En "Mi panel" del joven:
 - **Certificado de pasantía**: al cerrar el acompañamiento de una pasantía, la empresa emite un certificado que aparece en "Pasantías y proyectos".
 - Para probarlo: en "Mis postulaciones" usa "Simular respuesta de la empresa" en la pasantía de Grupo Pacífico hasta que salga seleccionada.
 
+## Feedback de la presentación (nov. 2026)
+- **Lo que más pide el mercado** (Capacitaciones): ranking de habilidades según cuántas ofertas publicadas las piden, por carrera. Los cursos se ordenan por demanda y los 3 más pedidos llevan el sello "Muy pedido".
+- **Asesor IA de empleabilidad** (Mi panel): el joven pregunta qué mejorar, qué curso tomar, cómo mejorar su hoja de vida, a qué ofertas postular o cómo prepararse para una entrevista. Es un **prototipo**: las respuestas salen de reglas que cruzan el perfil con las ofertas (`HABILIDADES_MERCADO` en `js/data.js`). En producción se conectaría un modelo de IA desde un servidor, nunca con la clave en el navegador.
+
 ## Datos guardados
 Postulaciones, cursos, alertas y ofertas publicadas se guardan en el navegador (localStorage).
 En "Mi panel" → "Restablecer datos de ejemplo" vuelve al estado inicial.

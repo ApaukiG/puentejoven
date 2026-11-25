@@ -330,17 +330,52 @@
     return "nuevo";
   }
 
+  /* ---------- Lo que más pide el mercado ----------
+     Feedback de la presentación: mostrar primero las capacitaciones más pedidas.
+     Se calcula con los requisitos y descripciones de las ofertas publicadas. */
+  const textoOferta = (o) => [o.titulo, o.descripcion, ...(o.requisitos || [])].join(" ").toLowerCase();
+  function demanda(carrera) {
+    const ofs = allOfertas().filter((o) => !carrera || o.carrera === carrera);
+    return HABILIDADES_MERCADO.map((h) => {
+      const n = ofs.filter((o) => h.claves.some((k) => textoOferta(o).includes(k))).length;
+      return { ...h, n, total: ofs.length, pct: ofs.length ? Math.round((n / ofs.length) * 100) : 0 };
+    }).filter((h) => h.n > 0).sort((a, b) => b.n - a.n);
+  }
+
+  function renderDemanda(dem, car) {
+    const total = dem.length ? dem[0].total : allOfertas().filter((o) => !car || o.carrera === car).length;
+    $("#dTitle").textContent = car ? `Lo que más piden las ofertas de ${car}` : "Las habilidades que más piden las ofertas";
+    $("#dNote").textContent = `Calculado con ${total} oferta${total === 1 ? "" : "s"} publicada${total === 1 ? "" : "s"} en Puente Joven${car ? " para esta carrera" : ""}. Elige tu carrera en el filtro para ver la tuya.`;
+    $("#dList").innerHTML = dem.length ? dem.slice(0, 5).map((h, i) => {
+      const c = CURSOS.find((x) => x.id === h.curso);
+      return `
+        <li class="demand__item">
+          <span class="demand__rank">${i + 1}</span>
+          <div class="demand__body">
+            <div class="demand__row"><b>${esc(h.nombre)}</b><span class="demand__pct">${h.pct} %</span></div>
+            <div class="demand__bar"><span style="width:${h.pct}%"></span></div>
+            <small>Lo piden ${h.n} de ${h.total} ofertas${c ? ` · Curso: ${esc(c.titulo)}` : ""}</small>
+          </div>
+          ${c ? `<button class="btn btn--outline btn--sm" data-go-course="${c.id}">Ver curso</button>` : ""}
+        </li>`;
+    }).join("") : `<li class="muted">Todavía no hay ofertas publicadas para esta carrera.</li>`;
+  }
+
   function renderCursos() {
     const q = $("#cSearch").value.trim().toLowerCase();
     const car = $("#cCarrera").value;
     const cat = $("#cCategoria").value;
     const gratis = $("#cGratis").checked;
+    const dem = demanda(car);
+    renderDemanda(dem, car);
+    const pctCurso = (id) => (dem.find((h) => h.curso === id) || { pct: 0 }).pct;
+    const top = new Set(dem.slice(0, 3).map((h) => h.curso));
     const list = CURSOS.filter((c) =>
       (!q || c.titulo.toLowerCase().includes(q) || c.categoria.toLowerCase().includes(q)) &&
       (!car || c.carreras.includes(car) || c.carreras.includes("Todas")) &&
       (!cat || c.categoria === cat) &&
       (!gratis || c.costo === 0)
-    );
+    ).sort((a, b) => pctCurso(b.id) - pctCurso(a.id)); // los más pedidos por el mercado primero
     $("#cCount").textContent = `${list.length} curso${list.length === 1 ? "" : "s"} encontrado${list.length === 1 ? "" : "s"}`;
     $("#courseGrid").innerHTML = list.length ? list.map((c) => {
       const st = cursoEstado(c.id);
@@ -350,9 +385,10 @@
           ? `<button class="btn btn--primary btn--sm" data-complete="${c.id}">${ic("check")} Marcar como completado</button>`
           : `<button class="btn btn--outline btn--sm" data-enroll="${c.id}">${ic("plus")} Inscribirme</button>`;
       return `
-        <article class="course">
+        <article class="course" data-course-id="${c.id}">
           <div class="course__icon">${ic(c.icono)}</div>
           <span class="course__cat">${esc(c.categoria)}</span>
+          ${top.has(c.id) ? `<span class="badge badge--seal course__hot">${ic("trend")} Muy pedido · ${pctCurso(c.id)} % de las ofertas</span>` : ""}
           <h3>${esc(c.titulo)}</h3>
           <ul class="course__meta">
             <li>${ic("clock")} ${c.horas} h</li>
@@ -370,6 +406,23 @@
     }).join("") : `<div class="empty">${ic("search")}<p>No hay cursos con esos filtros. Prueba con otra carrera o tema.</p></div>`;
   }
   ["#cSearch", "#cCarrera", "#cCategoria", "#cGratis"].forEach((s) => $(s).addEventListener("input", renderCursos));
+
+  // Ir a un curso concreto (desde "Lo que más pide el mercado" o desde el Asesor IA)
+  function irACurso(id) {
+    const show = () => {
+      $("#cSearch").value = ""; $("#cCategoria").value = ""; $("#cGratis").checked = false;
+      renderCursos();
+      const card = $(`#courseGrid [data-course-id="${id}"]`);
+      if (!card) return;
+      card.scrollIntoView({ behavior: "smooth", block: "center" });
+      card.classList.remove("is-flash"); void card.offsetWidth; card.classList.add("is-flash");
+    };
+    if (location.hash.replace("#", "") !== "capacitaciones") { location.hash = "capacitaciones"; setTimeout(show, 350); } else show();
+  }
+  $("#dList").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-go-course]");
+    if (b) irACurso(b.dataset.goCourse);
+  });
 
   $("#courseGrid").addEventListener("click", (e) => {
     const en = e.target.closest("[data-enroll]");
@@ -818,6 +871,7 @@
     $("#pName").textContent = p.nombre;
     $("#pMeta").textContent = `${p.carrera} · ${p.ciudad} · ${p.graduacion}`;
     $("#pBio").textContent = p.bio;
+    renderAdvisor();
     $("#pSkills").innerHTML = p.habilidades.map((h) => `<span class="tag">${esc(h)}</span>`).join("");
 
     const st = profileStrength();
@@ -1002,6 +1056,170 @@
       toast(animo === "apoyo" ? `${mentorPara(o).nombre} te escribirá en menos de 24 horas.` : "¡Gracias! Tu mentor recibió tu seguimiento.");
     });
   }
+
+  /* ---------- Asesor IA de empleabilidad (prototipo) ----------
+     Feedback de la presentación: una IA a la que el joven le pida sugerencias según su perfil.
+     En este prototipo estático las respuestas salen de reglas que cruzan el perfil con
+     HABILIDADES_MERCADO y las ofertas; en producción se reemplazaría por un modelo de IA
+     llamado desde un servidor (nunca con la clave en el navegador). */
+  const advisorMsgs = [];
+  const norm = (t) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const tieneNumero = (t) => /\d/.test(t || "");
+
+  function perfilTexto() {
+    const p = state.perfil;
+    const cursos = state.cursos.completados.map((id) => CURSOS.find((c) => c.id === id)).filter(Boolean).map((c) => c.titulo);
+    return [...p.habilidades, ...cursos, ...p.experiencias.map((x) => `${x.titulo} ${x.logro}`)].join(" ").toLowerCase();
+  }
+  function brechas() {
+    const p = state.perfil;
+    let dem = demanda(p.carrera);
+    if (!dem.length) dem = demanda("");
+    const txt = perfilTexto();
+    return dem.map((h) => ({
+      ...h,
+      tiene: state.cursos.completados.includes(h.curso) || h.claves.some((k) => txt.includes(k)),
+      inscrito: state.cursos.inscritos.includes(h.curso),
+    }));
+  }
+  const cursoBtn = (id, label = "Ver curso") => `<button type="button" class="link-btn" data-adv-course="${id}">${ic("arrow")} ${label}</button>`;
+
+  function advAnalisis() {
+    const p = state.perfil;
+    const br = brechas();
+    const mejoras = [];
+    br.filter((h) => !h.tiene).slice(0, 2).forEach((h) => {
+      const c = CURSOS.find((x) => x.id === h.curso);
+      mejoras.push(h.inscrito
+        ? `<b>Termina ${esc(c.titulo)}.</b> ${esc(h.nombre)} aparece en ${h.n} de ${h.total} ofertas de ${esc(p.carrera)} y ya estás inscrita/o. ${cursoBtn(c.id, "Ir al curso")}`
+        : `<b>Aprende ${esc(h.nombre)}.</b> Lo piden ${h.n} de ${h.total} ofertas de ${esc(p.carrera)} y todavía no aparece en tu perfil. ${cursoBtn(c.id)}`);
+    });
+    const ing = p.habilidades.find((x) => /ingl/i.test(x));
+    if ((!ing || /A1|A2/.test(ing)) && !state.cursos.completados.includes("c3"))
+      mejoras.push(`<b>Sube tu inglés a B1.</b> ${ing ? `Hoy tienes ${esc(ing)}.` : "No tienes inglés en tu perfil."} Muchas empresas lo usan para elegir entre candidatos parecidos. ${state.cursos.inscritos.includes("c3") ? `Ya estás inscrita/o en el curso de inglés: termínalo. ${cursoBtn("c3", "Ir al curso")}` : cursoBtn("c3")}`);
+    const sinNum = p.experiencias.filter((x) => !tieneNumero(x.logro));
+    if (sinNum.length) mejoras.push(`<b>Pon números en tus logros.</b> En “${esc(sinNum[0].titulo)}” cuenta cuánto hiciste (personas, documentos, tiempo ahorrado).`);
+    if (!state.simPracticas) mejoras.push(`<b>Practica una entrevista.</b> Aún no has usado el simulador. <a class="link-btn" href="#capacitaciones">${ic("arrow")} Ir al simulador</a>`);
+    if (state.postulaciones.length < 3) mejoras.push(`<b>Postula a más ofertas.</b> Tienes ${state.postulaciones.length}. Con 3 o más aumentan tus posibilidades.`);
+
+    const fuertes = [];
+    const cub = br.filter((h) => h.tiene).map((h) => h.nombre);
+    if (cub.length) fuertes.push(`Ya cubres lo que más piden en tu área: ${esc(cub.slice(0, 3).join(", "))}.`);
+    if (p.experiencias.length) fuertes.push(`Tienes ${p.experiencias.length} pasantías o proyectos: eso también es experiencia.`);
+    if (p.experiencias.some((x) => x.certificado)) fuertes.push("Tu pasantía está certificada.");
+    if (state.cursos.completados.length) fuertes.push(`${state.cursos.completados.length} cursos certificados en tu perfil.`);
+    if (state.recos.length) fuertes.push(`${state.recos.length} recomendaciones de mentores.`);
+
+    return `<p>Revisé tu perfil de <b>${esc(p.carrera)}</b> y lo comparé con las ofertas de tu carrera. Esto es lo que más te ayudaría ahora:</p>
+      <ol>${mejoras.slice(0, 3).map((m) => `<li>${m}</li>`).join("") || "<li>Tu perfil ya cubre lo principal. Sigue postulando y pide una mentoría para afinar tu entrevista.</li>"}</ol>
+      ${fuertes.length ? `<p class="advisor__plus"><b>A tu favor:</b> ${fuertes.join(" ")}</p>` : ""}`;
+  }
+
+  function advCurso() {
+    const g = brechas().find((h) => !h.tiene);
+    if (!g) return `<p>Ya cubres las habilidades que más piden en ${esc(state.perfil.carrera)}. Te sugiero <b>Inglés para entrevistas de trabajo</b> para destacar frente a otros candidatos. ${cursoBtn("c3")}</p>`;
+    const c = CURSOS.find((x) => x.id === g.curso);
+    return `<p>Empieza por <b>${esc(c.titulo)}</b>.</p>
+      <p>Es la habilidad que más piden las ofertas de ${esc(state.perfil.carrera)} que aún no está en tu perfil: aparece en ${g.n} de ${g.total} ofertas. Dura ${c.horas} horas y ${c.costo === 0 ? "es gratis" : `cuesta ${money(c.costo)}`}. Al terminarlo, el certificado se suma a tu perfil.</p>
+      ${cursoBtn(c.id, g.inscrito ? "Ir al curso (ya estás inscrita/o)" : "Ver curso")}`;
+  }
+
+  function advCV() {
+    const p = state.perfil;
+    const items = p.experiencias.map((x) => tieneNumero(x.logro)
+      ? `<li>${ic("check")} <b>${esc(x.titulo)}</b>: bien, tu logro tiene un dato medible.</li>`
+      : `<li>${ic("plus")} <b>${esc(x.titulo)}</b>: agrega un número (cuántas personas, cuánto tiempo, cuántos documentos).</li>`).join("");
+    const top = brechas().filter((h) => h.tiene).map((h) => h.nombre);
+    return `<p>Así puedes mejorar tu hoja de vida con lo que ya tienes:</p>
+      <ul class="advisor__ticks">${items}</ul>
+      <p>${top.length ? `Pon primero las habilidades que más piden en tu área: <b>${esc(top.slice(0, 3).join(", "))}</b>.` : "Pon primero las habilidades que más piden las ofertas de tu área."} Escribe tus pasantías y proyectos como experiencia, no al final.</p>
+      ${state.cursos.completados.includes("c12") ? "<p>Ya completaste la guía de hoja de vida: repasa la parte de logros.</p>" : `<p>Te ayuda la guía corta “Cómo armar tu hoja de vida sin experiencia” (4 h, gratis). ${cursoBtn("c12")}</p>`}`;
+  }
+
+  function advOfertas() {
+    const p = state.perfil;
+    const txt = perfilTexto();
+    const ya = new Set(state.postulaciones.map((x) => x.ofertaId));
+    const cand = allOfertas().filter((o) => o.carrera === p.carrera && !ya.has(o.id)).map((o) => {
+      const req = o.requisitos || [];
+      const cumple = req.filter((r) => r.toLowerCase().split(/[\s,;()]+/).some((w) => w.length > 4 && txt.includes(w))).length;
+      const score = cumple * 2 + (o.experiencia ? 0 : 2) + (o.verificada ? 1 : 0) + (o.ciudad === p.ciudad ? 1 : 0) + (o.primeraOportunidad ? 1 : 0);
+      return { o, score, cumple, req: req.length };
+    }).sort((a, b) => b.score - a.score).slice(0, 3);
+    if (!cand.length) return `<p>Ya postulaste a todas las ofertas de ${esc(p.carrera)} que hay ahora. Activa una alerta en Empleos para enterarte de las nuevas.</p>`;
+    return `<p>Estas ofertas de ${esc(p.carrera)} encajan mejor con tu perfil y todavía no postulaste:</p>
+      <ul class="advisor__jobs">${cand.map(({ o, cumple, req }) => `
+        <li><b>${esc(o.titulo)}</b> · ${esc(o.empresa)}<br><small>${esc(o.ciudad)} · ${expTxt(o.experiencia)} · cumples ${cumple} de ${req} requisitos${o.verificada ? " · empresa verificada" : ""}</small><br>
+        <button type="button" class="link-btn" data-adv-job="${o.id}">${ic("arrow")} Ver oferta</button></li>`).join("")}</ul>`;
+  }
+
+  function advEntrevista() {
+    const mt = MENTORES.find((m) => m.area === state.perfil.carrera) || MENTORES[0];
+    return `<p>Tres cosas que más ayudan en una primera entrevista:</p>
+      <ol>
+        <li><b>“Háblame de ti” en 3 partes:</b> tu carrera, lo que hiciste (pasantía o proyecto con un dato) y por qué quieres ese puesto.</li>
+        <li><b>Usa ejemplos reales:</b> cuenta tus logros con números, como en tu perfil.</li>
+        <li><b>Lleva una pregunta</b> para la empresa sobre el puesto o el equipo.</li>
+      </ol>
+      <p>${state.simPracticas ? `Ya practicaste ${state.simPracticas} ${state.simPracticas === 1 ? "vez" : "veces"} en el simulador; repite con otra pregunta.` : "Practica primero en el simulador de entrevistas."} <a class="link-btn" href="#capacitaciones">${ic("arrow")} Ir al simulador</a></p>
+      <p>Para un ensayo real puedes pedir mentoría a ${esc(mt.nombre)} (${esc(mt.cargo)}). <a class="link-btn" href="#mentores">${ic("arrow")} Ver mentores</a></p>`;
+  }
+
+  function advResponder(q) {
+    const t = norm(q);
+    // De lo más específico a lo más general ("mejorar mi hoja de vida" → hoja de vida)
+    if (/hoja|cv|curricul/.test(t)) return advCV();
+    if (/curso|capacit|aprend|estudi/.test(t)) return advCurso();
+    if (/entrevist/.test(t)) return advEntrevista();
+    if (/oferta|postul|vacante/.test(t)) return advOfertas();
+    if (/mejor|debo|falta|consegu|posibilidad|recomienda/.test(t)) return advAnalisis();
+    if (/empleo|trabajo/.test(t)) return advOfertas();
+    if (/^(hola|buenas|hey)/.test(t)) return `<p>¡Hola, ${esc(state.perfil.nombre.split(" ")[0])}! Pregúntame qué mejorar, qué curso tomar, cómo mejorar tu hoja de vida o a qué ofertas postular.</p>`;
+    return `<p>No estoy seguro de haber entendido tu pregunta. Por ahora te puedo ayudar con: qué mejorar, qué curso tomar, tu hoja de vida, a qué ofertas postular y cómo prepararte para una entrevista. Esto es lo que te recomiendo según tu perfil:</p>${advAnalisis()}`;
+  }
+
+  function renderAdvisor() {
+    if (!advisorMsgs.length) advisorMsgs.push({ de: "ia", html: `<p>Hola, ${esc(state.perfil.nombre.split(" ")[0])}. Soy tu asesor de empleabilidad. Puedo decirte qué mejorar en tu perfil de ${esc(state.perfil.carrera)} para tener más posibilidades de conseguir trabajo. Elige una pregunta o escribe la tuya.</p>` });
+    $("#aChat").innerHTML = advisorMsgs.map((m) => m.de === "yo"
+      ? `<div class="msg msg--me">${esc(m.txt)}</div>`
+      : `<div class="msg msg--ai"><span class="msg__icon">${ic("sparkle")}</span><div>${m.html}</div></div>`).join("");
+    $("#aChat").scrollTop = $("#aChat").scrollHeight;
+  }
+
+  function advPreguntar(q) {
+    q = q.trim();
+    if (!q) return;
+    advisorMsgs.push({ de: "yo", txt: q });
+    advisorMsgs.push({ de: "ia", html: `<p class="msg__typing"><span></span><span></span><span></span></p>` });
+    renderAdvisor();
+    setTimeout(() => {
+      advisorMsgs[advisorMsgs.length - 1] = { de: "ia", html: advResponder(q) };
+      renderAdvisor();
+    }, 650);
+  }
+
+  $("#aForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    advPreguntar($("#aInput").value);
+    $("#aInput").value = "";
+  });
+  $("#aQuick").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-ask]");
+    if (b) advPreguntar(b.dataset.ask);
+  });
+  $("#aChat").addEventListener("click", (e) => {
+    const c = e.target.closest("[data-adv-course]");
+    const j = e.target.closest("[data-adv-job]");
+    if (c) irACurso(c.dataset.advCourse);
+    if (j) {
+      location.hash = "empleos";
+      setTimeout(() => {
+        setFilters({});
+        renderJobs();
+        $(`#jobList [data-detail="${j.dataset.advJob}"]`)?.click();
+      }, 350);
+    }
+  });
 
   // Eventos del panel (delegación)
   $('[data-page="panel"]').addEventListener("click", (e) => {

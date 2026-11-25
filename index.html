@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css?v=6" />
+  <link rel="stylesheet" href="css/styles.css?v=7" />
 </head>
 <body>
 
@@ -351,6 +351,17 @@
   <!-- Catálogo -->
   <section class="section" id="cursos">
     <div class="container">
+      <div class="demand reveal">
+        <div class="demand__head">
+          <div>
+            <span class="kicker">Lo que más pide el mercado</span>
+            <h2 id="dTitle">Las habilidades que más piden las ofertas</h2>
+            <p class="muted" id="dNote"></p>
+          </div>
+        </div>
+        <ol class="demand__list" id="dList"></ol>
+      </div>
+
       <div class="filters">
         <label class="field field--search">
           <svg class="i"><use href="#i-search"/></svg>
@@ -626,6 +637,27 @@
 
       <!-- Columna derecha -->
       <div class="dash__col dash__col--wide">
+        <div class="card advisor" id="advisor">
+          <div class="card__head">
+            <h3><svg class="i"><use href="#i-sparkle"/></svg> Asesor IA de empleabilidad</h3>
+            <span class="badge badge--sand">Prototipo</span>
+          </div>
+          <p class="muted small">Pregúntale qué mejorar. Revisa tu carrera, habilidades, cursos, pasantías y postulaciones, y lo compara con lo que piden las ofertas.</p>
+          <div class="advisor__chat" id="aChat" aria-live="polite"></div>
+          <div class="chips advisor__quick" id="aQuick">
+            <button type="button" class="chip" data-ask="¿Qué debo mejorar para conseguir trabajo?">¿Qué debo mejorar?</button>
+            <button type="button" class="chip" data-ask="¿Qué curso tomo primero?">¿Qué curso tomo primero?</button>
+            <button type="button" class="chip" data-ask="¿Cómo mejoro mi hoja de vida?">Mi hoja de vida</button>
+            <button type="button" class="chip" data-ask="¿A qué ofertas me conviene postular?">¿A qué ofertas postulo?</button>
+            <button type="button" class="chip" data-ask="¿Cómo me preparo para una entrevista?">Entrevistas</button>
+          </div>
+          <form class="advisor__form" id="aForm">
+            <input id="aInput" type="text" maxlength="200" placeholder="Escribe tu pregunta…" aria-label="Pregunta para el asesor" autocomplete="off" />
+            <button class="btn btn--primary btn--sm" type="submit"><svg class="i"><use href="#i-send"/></svg> Preguntar</button>
+          </form>
+          <p class="advisor__disclaimer">Prototipo: las sugerencias se generan con reglas a partir de tu perfil y de las ofertas de la plataforma. En la versión final las daría un modelo de IA.</p>
+        </div>
+
         <div class="card">
           <div class="card__head">
             <h3>Mis postulaciones</h3>
@@ -866,7 +898,7 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/data.js?v=6"></script>
-<script src="js/app.js?v=6"></script>
+<script src="js/data.js?v=7"></script>
+<script src="js/app.js?v=7"></script>
 </body>
 </html>

@@ -83,6 +83,22 @@ const CURSOS = [
   { id: "c12", titulo: "Cómo armar tu hoja de vida sin experiencia", categoria: "Empleabilidad", carreras: ["Todas"], horas: 4, nivel: "Básico", costo: 0, proveedor: "Academia Puente Joven", icono: "award" },
 ];
 
+/* ---------- Demanda del mercado ----------
+   Feedback de la presentación: mostrar primero las capacitaciones que más pide el mercado.
+   Cada habilidad se busca (por palabras clave) en los requisitos y descripciones de las
+   ofertas publicadas en la plataforma; el % es cuántas ofertas la mencionan.
+   curso → la capacitación que cubre esa habilidad. */
+const HABILIDADES_MERCADO = [
+  { id: "excel", nombre: "Excel", claves: ["excel"], curso: "c1" },
+  { id: "datos", nombre: "Reportes y análisis de datos", claves: ["reporte", "métrica", "power bi", "sql"], curso: "c6" },
+  { id: "comunicacion", nombre: "Comunicación y atención", claves: ["redacción", "comunicación", "atención", "servicio", "clientes"], curso: "c4" },
+  { id: "redes", nombre: "Marketing digital y redes", claves: ["redes", "meta ads", "campaña", "contenido"], curso: "c7" },
+  { id: "portafolio", nombre: "Portafolio y diseño", claves: ["portafolio", "canva", "figma"], curso: "c11" },
+  { id: "facturacion", nombre: "Facturación electrónica", claves: ["facturación"], curso: "c2" },
+  { id: "ingles", nombre: "Inglés", claves: ["inglés"], curso: "c3" },
+  { id: "programacion", nombre: "Git y desarrollo web", claves: ["git", "html", "javascript"], curso: "c8" },
+];
+
 /* ---------- Mentores (ejemplo) ---------- */
 const MENTORES = [
   { id: "m1", nombre: "Carolina Andrade", cargo: "Gerente de Talento Humano", empresa: "Grupo comercial (ejemplo)", area: "Administración", ciudad: "Quito", anios: 12, frase: "Mi primer trabajo fue de asistente. Te ayudo a contar tu historia con seguridad.", temas: ["Hoja de vida", "Entrevistas", "Plan de carrera"], color: "#14172B" },
