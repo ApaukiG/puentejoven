@@ -50,6 +50,7 @@ En "Mi panel" del joven:
 ## Feedback de la presentación (nov. 2026)
 - **Lo que más pide el mercado** (Capacitaciones): ranking de habilidades según cuántas ofertas publicadas las piden, por carrera. Los cursos se ordenan por demanda y los 3 más pedidos llevan el sello "Muy pedido".
 - **Asesor IA de empleabilidad** (Mi panel): el joven pregunta qué mejorar, qué curso tomar, cómo mejorar su hoja de vida, a qué ofertas postular o cómo prepararse para una entrevista. Es un **prototipo**: las respuestas salen de reglas que cruzan el perfil con las ofertas (`HABILIDADES_MERCADO` en `js/data.js`). En producción se conectaría un modelo de IA desde un servidor, nunca con la clave en el navegador.
+- **Análisis de la hoja de vida** (dentro del Asesor): el joven sube su CV en PDF, Word (.docx) o .txt. Se lee en el navegador con pdf.js y mammoth (desde jsDelivr), sin subirlo a ningún servidor, y se revisa con reglas: secciones, contacto, largo, logros con números, verbos de acción, frases genéricas, datos personales innecesarios y habilidades que piden las ofertas de su carrera.
 
 ## Datos guardados
 Postulaciones, cursos, alertas y ofertas publicadas se guardan en el navegador (localStorage).

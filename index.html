@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css?v=7" />
+  <link rel="stylesheet" href="css/styles.css?v=8" />
 </head>
 <body>
 
@@ -644,6 +644,11 @@
           </div>
           <p class="muted small">Pregúntale qué mejorar. Revisa tu carrera, habilidades, cursos, pasantías y postulaciones, y lo compara con lo que piden las ofertas.</p>
           <div class="advisor__chat" id="aChat" aria-live="polite"></div>
+          <div class="advisor__cv">
+            <button type="button" class="btn btn--outline btn--sm" id="aCvBtn"><svg class="i"><use href="#i-book"/></svg> Analizar mi hoja de vida</button>
+            <input type="file" id="aCvFile" accept=".pdf,.docx,.txt" hidden />
+            <small>PDF, Word (.docx) o texto. Se lee solo en tu navegador: el archivo no se sube a ningún servidor.</small>
+          </div>
           <div class="chips advisor__quick" id="aQuick">
             <button type="button" class="chip" data-ask="¿Qué debo mejorar para conseguir trabajo?">¿Qué debo mejorar?</button>
             <button type="button" class="chip" data-ask="¿Qué curso tomo primero?">¿Qué curso tomo primero?</button>
@@ -898,7 +903,7 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/data.js?v=7"></script>
-<script src="js/app.js?v=7"></script>
+<script src="js/data.js?v=8"></script>
+<script src="js/app.js?v=8"></script>
 </body>
 </html>

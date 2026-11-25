@@ -1130,7 +1130,7 @@
       ? `<li>${ic("check")} <b>${esc(x.titulo)}</b>: bien, tu logro tiene un dato medible.</li>`
       : `<li>${ic("plus")} <b>${esc(x.titulo)}</b>: agrega un número (cuántas personas, cuánto tiempo, cuántos documentos).</li>`).join("");
     const top = brechas().filter((h) => h.tiene).map((h) => h.nombre);
-    return `<p>Así puedes mejorar tu hoja de vida con lo que ya tienes:</p>
+    return `<p>Si quieres que revise tu CV real, súbelo con el botón <b>“Analizar mi hoja de vida”</b>. Mientras tanto, esto es lo que veo en tu perfil:</p>
       <ul class="advisor__ticks">${items}</ul>
       <p>${top.length ? `Pon primero las habilidades que más piden en tu área: <b>${esc(top.slice(0, 3).join(", "))}</b>.` : "Pon primero las habilidades que más piden las ofertas de tu área."} Escribe tus pasantías y proyectos como experiencia, no al final.</p>
       ${state.cursos.completados.includes("c12") ? "<p>Ya completaste la guía de hoja de vida: repasa la parte de logros.</p>" : `<p>Te ayuda la guía corta “Cómo armar tu hoja de vida sin experiencia” (4 h, gratis). ${cursoBtn("c12")}</p>`}`;
@@ -1197,6 +1197,143 @@
       renderAdvisor();
     }, 650);
   }
+
+  /* ---------- Análisis de la hoja de vida (prototipo) ----------
+     El archivo se lee en el navegador (pdf.js para PDF, mammoth para Word) y se revisa con
+     reglas: secciones, contacto, largo, logros con números, verbos de acción, frases
+     genéricas y habilidades que piden las ofertas de la carrera del joven.
+     Una IA real además juzgaría la redacción y propondría frases mejores. */
+  const loadScript = (src) => new Promise((ok, fail) => {
+    if (document.querySelector(`script[src="${src}"]`)) return ok();
+    const sc = document.createElement("script");
+    sc.src = src; sc.onload = ok; sc.onerror = () => fail(new Error("No se pudo cargar " + src));
+    document.head.appendChild(sc);
+  });
+  const PDFJS = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js";
+  const PDFJS_WORKER = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+  const MAMMOTH = "https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js";
+
+  async function leerCV(file) {
+    const ext = (file.name.split(".").pop() || "").toLowerCase();
+    if (ext === "txt") return await file.text();
+    const buf = await file.arrayBuffer();
+    if (ext === "pdf") {
+      await loadScript(PDFJS);
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+      const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
+      let out = "";
+      for (let i = 1; i <= Math.min(pdf.numPages, 6); i++) {
+        const page = await pdf.getPage(i);
+        const tc = await page.getTextContent();
+        let lastY = null;
+        tc.items.forEach((it) => {
+          const y = it.transform ? it.transform[5] : null;
+          out += (lastY !== null && y !== null && Math.abs(y - lastY) > 2 ? "\n" : " ") + it.str;
+          lastY = y;
+        });
+        out += "\n";
+      }
+      return out;
+    }
+    if (ext === "docx") {
+      await loadScript(MAMMOTH);
+      const r = await window.mammoth.extractRawText({ arrayBuffer: buf });
+      return r.value;
+    }
+    throw new Error("formato");
+  }
+
+  const SECCIONES_CV = [
+    { id: "perfil", nombre: "Perfil o resumen", re: /perfil|resumen|sobre m[ií]|acerca de m[ií]|objetivo/ },
+    { id: "experiencia", nombre: "Experiencia (pasantías y proyectos)", re: /experiencia|pr[aá]cticas|pasant[ií]a|proyectos/ },
+    { id: "educacion", nombre: "Educación", re: /educaci[oó]n|formaci[oó]n|estudios|universidad/ },
+    { id: "habilidades", nombre: "Habilidades", re: /habilidades|competencias|conocimientos|herramientas|aptitudes/ },
+    { id: "idiomas", nombre: "Idiomas", re: /idiomas|ingl[eé]s|english/ },
+  ];
+  // Raíces de verbos de acción en pasado (organicé, diseñé…); deben iniciar la línea del logro
+  const VERBOS = ["organic", "diseñ", "coordin", "lider", "implement", "desarroll", "gestion", "logr", "elabor", "cre", "reduj", "aument", "mejor", "planific", "atend", "administr", "analic", "capacit", "dirig", "optimic", "automatic", "apoy", "realic", "particip", "vend", "redact", "investig", "dise", "constru", "program", "supervis", "control", "atend", "asesor", "registr", "prepar"];
+  const empiezaConVerbo = (l) => {
+    const w = l.replace(/^[\s•\-–—*·▪●○✓>]+/, "").split(/\s+/)[0].toLowerCase();
+    return w.length > 3 && /[éíó]$|aron$|amos$|imos$/.test(w) && VERBOS.some((v) => w.startsWith(v));
+  };
+  const GENERICAS = [
+    { re: /no tengo experiencia|sin experiencia/, txt: "“no tengo experiencia”: mejor cuenta lo que SÍ hiciste (pasantías, proyectos, voluntariados)." },
+    { re: /proactiv|responsable|din[aá]mic|trabajo bajo presi[oó]n|ganas de aprender|puntual/, txt: "adjetivos genéricos como “proactivo/a”, “responsable” o “ganas de aprender”: casi todos los CV los usan. Demuéstralos con un ejemplo." },
+  ];
+
+  function analizarCV(raw, nombreArchivo) {
+    const txt = raw.replace(/ /g, " ");
+    const low = txt.toLowerCase();
+    const palabras = (low.match(/[a-záéíóúñü0-9]+/gi) || []).length;
+    if (palabras < 40) return `<p>Abrí <b>${esc(nombreArchivo)}</b>, pero casi no encontré texto (${palabras} palabras). Si tu CV es una imagen o un PDF escaneado, expórtalo de nuevo desde Word o Canva como PDF con texto.</p>`;
+
+    const bien = [], mejorar = [];
+    // Secciones
+    const faltan = SECCIONES_CV.filter((s) => !s.re.test(low));
+    if (!faltan.length) bien.push("Tiene las secciones clave: perfil, experiencia, educación, habilidades e idiomas.");
+    else mejorar.push(`<b>Agrega estas secciones:</b> ${faltan.map((s) => esc(s.nombre)).join(", ")}.`);
+    // Contacto
+    const mail = /[\w.+-]+@[\w-]+\.[\w.]+/.test(txt);
+    const tel = /(\+?593|\b0)9\d[\s-]?\d{3}[\s-]?\d{4}|\b\d{3}[\s-]\d{3}[\s-]\d{4}\b/.test(txt);
+    if (mail && tel) bien.push("Tiene correo y teléfono de contacto.");
+    else mejorar.push(`<b>Datos de contacto:</b> falta ${!mail && !tel ? "correo y teléfono" : !mail ? "un correo" : "un teléfono"}. Sin eso la empresa no puede llamarte.`);
+    if (/linkedin\.com/.test(low)) bien.push("Incluye tu LinkedIn.");
+    // Largo
+    if (palabras > 900) mejorar.push(`<b>Es largo (${palabras} palabras).</b> Para un recién graduado lo ideal es 1 página (unas 350 a 650 palabras). Deja solo lo más relevante.`);
+    else if (palabras < 180) mejorar.push(`<b>Es corto (${palabras} palabras).</b> Cuenta más sobre tus pasantías, proyectos y cursos: también son experiencia.`);
+    else bien.push(`Largo adecuado (${palabras} palabras, cerca de 1 página).`);
+    // Logros con números
+    const lineas = txt.split(/\n+/).map((l) => l.trim()).filter((l) => l.split(/\s+/).length >= 6);
+    const conVerbo = lineas.filter(empiezaConVerbo);
+    const conNum = conVerbo.filter((l) => /\d/.test(l));
+    if (conVerbo.length && conNum.length / conVerbo.length >= 0.4) bien.push(`${conNum.length} de tus logros tienen datos medibles.`);
+    else if (conVerbo.length) {
+      const ej = conVerbo.find((l) => !/\d/.test(l));
+      mejorar.push(`<b>Pon números en tus logros.</b> Solo ${conNum.length} de ${conVerbo.length} tienen un dato medible. Por ejemplo, en “${esc(ej.slice(0, 90))}${ej.length > 90 ? "…" : ""}” di cuánto, a cuántas personas o en cuánto tiempo.`);
+    }
+    if (conVerbo.length < 3) mejorar.push("<b>Usa verbos de acción</b> al inicio de cada logro: organicé, diseñé, coordiné, atendí, elaboré.");
+    else bien.push("Usa verbos de acción para contar lo que hiciste.");
+    // Frases genéricas
+    GENERICAS.filter((g) => g.re.test(low)).forEach((g) => mejorar.push(`<b>Cambia ${g.txt}</b>`));
+    // Datos personales innecesarios
+    if (/c[eé]dula|estado civil|fecha de nacimiento|c\.i\./.test(low)) mejorar.push("<b>Datos personales:</b> la cédula, el estado civil o la fecha de nacimiento no son necesarios en el CV. Quítalos para proteger tus datos; los das solo si te contratan.");
+    // Habilidades del mercado
+    const car = state.perfil.carrera;
+    let dem = demanda(car); if (!dem.length) dem = demanda("");
+    const tiene = dem.filter((h) => h.claves.some((k) => low.includes(k)));
+    const falta = dem.filter((h) => !tiene.includes(h)).slice(0, 3);
+    if (tiene.length) bien.push(`Menciona habilidades que piden las ofertas de ${esc(car)}: ${esc(tiene.map((h) => h.nombre).join(", "))}.`);
+    falta.forEach((h) => mejorar.push(`<b>Tu CV no menciona ${esc(h.nombre)}.</b> Lo piden ${h.n} de ${h.total} ofertas de ${esc(car)}. Si ya lo sabes, escríbelo; si no, ${cursoBtn(h.curso, "toma el curso")}`));
+
+    const total = bien.length + mejorar.length;
+    return `<p>Leí tu hoja de vida <b>${esc(nombreArchivo)}</b> y la comparé con las ofertas de <b>${esc(car)}</b>. <b>${bien.length} de ${total}</b> puntos revisados están bien.</p>
+      ${mejorar.length ? `<p><b>Para mejorar:</b></p><ol>${mejorar.slice(0, 6).map((m) => `<li>${m}</li>`).join("")}</ol>` : ""}
+      ${bien.length ? `<p class="advisor__plus"><b>Lo que ya está bien:</b></p><ul class="advisor__ticks">${bien.map((b) => `<li>${ic("check")} ${b}</li>`).join("")}</ul>` : ""}
+      <p class="advisor__note">Revisión automática con reglas. Una IA real además juzgaría si cada frase es clara y convincente, y te propondría cómo reescribirla.</p>`;
+  }
+
+  $("#aCvBtn").addEventListener("click", () => $("#aCvFile").click());
+  $("#aCvFile").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    advisorMsgs.push({ de: "yo", txt: `Subí mi hoja de vida: ${file.name}` });
+    const ext = (file.name.split(".").pop() || "").toLowerCase();
+    let html;
+    if (!["pdf", "docx", "txt"].includes(ext)) html = `<p>Por ahora leo archivos PDF, Word (.docx) o texto (.txt). Si tu CV es .doc (Word antiguo), guárdalo como .docx o PDF y vuelve a subirlo.</p>`;
+    else if (file.size > 5 * 1024 * 1024) html = `<p>El archivo pesa más de 5 MB. Un CV de 1 o 2 páginas suele pesar mucho menos: expórtalo de nuevo como PDF.</p>`;
+    if (html) { advisorMsgs.push({ de: "ia", html }); renderAdvisor(); return; }
+    advisorMsgs.push({ de: "ia", html: `<p class="msg__typing"><span></span><span></span><span></span></p>` });
+    renderAdvisor();
+    try {
+      const texto = await leerCV(file);
+      html = analizarCV(texto, file.name);
+    } catch (err) {
+      html = `<p>No pude leer <b>${esc(file.name)}</b>. Revisa tu conexión a internet (el lector de PDF y Word se descarga la primera vez) o prueba con otro formato.</p>`;
+    }
+    advisorMsgs[advisorMsgs.length - 1] = { de: "ia", html };
+    renderAdvisor();
+  });
 
   $("#aForm").addEventListener("submit", (e) => {
     e.preventDefault();
