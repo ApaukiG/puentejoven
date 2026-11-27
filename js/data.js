@@ -81,6 +81,9 @@ const CURSOS = [
   { id: "c10", titulo: "Atención al cliente y servicio en turismo", categoria: "Habilidades blandas", carreras: ["Turismo y Gastronomía", "Administración"], horas: 8, nivel: "Básico", costo: 0, proveedor: "Red de mentores", icono: "heart" },
   { id: "c11", titulo: "Canva y Figma para presentar proyectos", categoria: "Herramientas digitales", carreras: ["Comunicación y Diseño", "Marketing"], horas: 9, nivel: "Básico", costo: 0, proveedor: "Academia Puente Joven", icono: "sparkle" },
   { id: "c12", titulo: "Cómo armar tu hoja de vida sin experiencia", categoria: "Empleabilidad", carreras: ["Todas"], horas: 4, nivel: "Básico", costo: 0, proveedor: "Academia Puente Joven", icono: "award" },
+  { id: "c13", titulo: "Valida tu idea de negocio antes de invertir", categoria: "Emprendimiento", carreras: ["Todas"], horas: 6, nivel: "Básico", costo: 0, proveedor: "Academia Puente Joven", icono: "target" },
+  { id: "c14", titulo: "Costos y precios para emprendedores", categoria: "Emprendimiento", carreras: ["Todas"], horas: 8, nivel: "Básico", costo: 0, proveedor: "Academia Puente Joven", icono: "dollar" },
+  { id: "c15", titulo: "Vende en redes con poco presupuesto", categoria: "Emprendimiento", carreras: ["Todas"], horas: 10, nivel: "Básico", costo: 0, proveedor: "Academia Puente Joven", icono: "trend" },
 ];
 
 /* ---------- Demanda del mercado ----------
@@ -109,6 +112,9 @@ const MENTORES = [
   { id: "m6", nombre: "Luis Quishpe", cargo: "Administrador de hotel", empresa: "Hotel boutique (ejemplo)", area: "Turismo y Gastronomía", ciudad: "Ibarra", anios: 11, frase: "En turismo la actitud abre puertas. Prepárate conmigo para destacar.", temas: ["Servicio al cliente", "Inglés", "Liderazgo"], color: "#5A47D6" },
   { id: "m7", nombre: "Fernanda Ruiz", cargo: "Contadora general", empresa: "Pyme exportadora (ejemplo)", area: "Contabilidad y Auditoría", ciudad: "Ambato", anios: 6, frase: "Facturación, impuestos y Excel: lo práctico que no te enseñaron.", temas: ["Facturación electrónica", "Excel"], color: "#14172B" },
   { id: "m8", nombre: "Javier Salazar", cargo: "Coordinador de operaciones", empresa: "Empresa logística (ejemplo)", area: "Administración", ciudad: "Manta", anios: 9, frase: "Te ayudo a convertir tus pasantías en logros concretos.", temas: ["Logros medibles", "Trabajo en equipo"], color: "#12805C" },
+  // Mentores con negocio propio (sección Emprende). emprende: true los muestra allí.
+  { id: "m9", nombre: "Paola Cuascota", cargo: "Fundadora de una cafetería de especialidad", empresa: "Negocio propio (ejemplo)", area: "Turismo y Gastronomía", ciudad: "Otavalo", anios: 5, frase: "Empecé vendiendo café en ferias con una sola mesa. Te ayudo a dar tu primer paso sin endeudarte.", temas: ["Validar la idea", "Costos y precios", "Primeros clientes"], color: "#B23F26", emprende: true },
+  { id: "m10", nombre: "Andrés Villacís", cargo: "Fundador de un estudio de diseño web", empresa: "Negocio propio (ejemplo)", area: "Sistemas y TI", ciudad: "Quito", anios: 6, frase: "No conseguía trabajo y empecé haciendo páginas para negocios de mi barrio. Hoy tengo un equipo de cuatro.", temas: ["Conseguir clientes", "Formalizarse", "Vender en redes"], color: "#5A47D6", emprende: true },
 ];
 
 /* ---------- Ofertas (ejemplo) — todas para perfiles junior ----------

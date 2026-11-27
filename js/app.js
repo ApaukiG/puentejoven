@@ -591,7 +591,10 @@
     const area = $("#mArea").value;
     const ciudad = $("#mCiudad").value;
     const list = MENTORES.filter((m) => (!area || m.area === area) && (!ciudad || m.ciudad === ciudad));
-    $("#mentorGrid").innerHTML = list.length ? list.map((m) => {
+    $("#mentorGrid").innerHTML = list.length ? list.map(mentorCard).join("") : `<div class="empty">${ic("users")}<p>No hay mentores con esos filtros todavía.</p></div>`;
+  }
+
+  function mentorCard(m) {
       const pedida = state.mentorias.some((x) => x.mentorId === m.id);
       return `
         <article class="mentor">
@@ -614,11 +617,11 @@
             ? `<button class="btn btn--green btn--block" disabled>${ic("check")} Mentoría solicitada</button>`
             : `<button class="btn btn--primary btn--block" data-mentor="${m.id}">${ic("chat")} Pedir mentoría</button>`}
         </article>`;
-    }).join("") : `<div class="empty">${ic("users")}<p>No hay mentores con esos filtros todavía.</p></div>`;
   }
   ["#mArea", "#mCiudad"].forEach((s) => $(s).addEventListener("input", renderMentores));
 
-  $("#mentorGrid").addEventListener("click", (e) => {
+  $("#mentorGrid").addEventListener("click", pedirMentoria);
+  function pedirMentoria(e) {
     const b = e.target.closest("[data-mentor]");
     if (!b) return;
     const m = MENTORES.find((x) => x.id === b.dataset.mentor);
@@ -641,11 +644,96 @@
       save();
       closeModal();
       renderMentores();
+      if (currentPage() === "emprende") renderEmprende();
       toast(`Solicitud enviada a ${m.nombre}. Te responderá en tu panel.`);
     });
-  });
+  }
 
   renderers.mentores = renderMentores;
+
+  /* =========================================================
+     EMPRENDE — Crea tu propio puente
+     Pedido tras la presentación: un camino para quien no encuentra trabajo.
+     ========================================================= */
+  const RUTA = [
+    { t: "Encuentra un problema", d: "Busca algo que molesta a muchas personas, no solo una idea que te gusta. Si nadie tiene el problema, nadie pagará por la solución.", ej: "“En mi barrio no hay quien arregle celulares rápido; la gente espera una semana.”", tips: ["Escucha quejas que se repiten", "Escribe el problema en una frase", "Pregúntate: ¿quién sufre más este problema?"] },
+    { t: "Valídalo con personas reales", d: "Habla con al menos 5 posibles clientes antes de invertir. Pregunta cómo lo resuelven hoy y cuánto les cuesta, no si les gusta tu idea.", ej: "Preguntar a 8 vecinos cuánto esperan hoy por una reparación y cuánto pagarían por tenerla en un día.", tips: ["Pregunta por lo que hacen, no por lo que harían", "Anota frases textuales", "Si 3 de 5 tienen el problema, vas bien"] },
+    { t: "Empieza pequeño", d: "Prueba con la versión más simple y barata de tu idea. Lo importante es aprender rápido si la gente compra.", ej: "Atender pedidos por WhatsApp desde casa antes de alquilar un local.", tips: ["Usa lo que ya tienes (celular, redes, tu casa)", "Pon un precio de prueba", "Pide opinión a cada cliente"] },
+    { t: "Calcula costos y precio", d: "Suma todo lo que gastas, incluido tu tiempo, y define un precio con el que ganes. Vender mucho a pérdida no es un negocio.", ej: "Repuesto $8 + transporte $2 + 1 hora de tu tiempo $4 = $14 de costo. Si cobras $20, ganas $6.", tips: ["Separa el dinero del negocio del personal", "Revisa cuánto cobra la competencia", "Anota cada venta y cada gasto"] },
+    { t: "Formalízate", d: "Cuando ya tengas clientes que se repiten, saca tu RUC en el SRI. La mayoría de pequeños negocios en Ecuador entra al régimen RIMPE: “Negocios Populares” si sus ingresos son de hasta USD 20.000 al año, y “Emprendedores” si superan los USD 20.000 y llegan hasta USD 300.000.", ej: "Kevin sacó su RUC al tercer mes, cuando ya tenía cinco clientes fijos que le pedían factura.", tips: ["El RUC se saca en el SRI (en línea o en una agencia)", "Pregunta qué comprobantes debes emitir", "Confirma tus obligaciones en sri.gob.ec"], fuente: true },
+  ];
+  const QUIZ = [
+    "¿Tienes identificado un problema que les pasa a varias personas?",
+    "¿Ya hablaste con al menos 5 posibles clientes sobre ese problema?",
+    "¿Puedes empezar con poco dinero, usando lo que ya tienes?",
+    "¿Sabes cuánto te costaría producir o dar tu servicio?",
+    "¿Puedes dedicarle algunas horas a la semana durante 3 meses?",
+  ];
+
+  function renderEmprende() {
+    $("#route").innerHTML = RUTA.map((p, i) => `
+      <li class="route__step reveal">
+        <span class="route__num">${i + 1}</span>
+        <div class="route__body">
+          <h3>${esc(p.t)}</h3>
+          <p>${esc(p.d)}</p>
+          <p class="route__ex"><b>Ejemplo:</b> ${esc(p.ej)}</p>
+          <ul class="route__tips">${p.tips.map((t) => `<li>${ic("check")} ${esc(t)}</li>`).join("")}</ul>
+          ${p.fuente ? `<p class="route__src">Información referencial a noviembre de 2026. Los montos y obligaciones pueden cambiar: confírmalos en el <a href="https://www.sri.gob.ec" target="_blank" rel="noopener">SRI</a>.</p>` : ""}
+        </div>
+      </li>`).join("");
+    if (!$("#quiz").children.length) {
+      $("#quiz").innerHTML = QUIZ.map((q, i) => `
+        <fieldset class="quiz__q">
+          <legend>${i + 1}. ${esc(q)}</legend>
+          <label class="chip"><input type="radio" name="q${i}" value="1" required /> Sí</label>
+          <label class="chip"><input type="radio" name="q${i}" value="0" /> Todavía no</label>
+        </fieldset>`).join("") + `<button class="btn btn--primary" type="submit">${ic("target")} Ver mi resultado</button>`;
+    }
+    $("#empCourses").innerHTML = CURSOS.filter((c) => c.categoria === "Emprendimiento").map((c) => `
+      <article class="emp-course">
+        <span class="course__icon">${ic(c.icono)}</span>
+        <div><h4>${esc(c.titulo)}</h4><small>${c.horas} h · ${c.costo === 0 ? "Gratis" : money(c.costo)} · Certificado</small></div>
+        <button class="btn btn--outline btn--sm" data-go-course="${c.id}">Ver curso</button>
+      </article>`).join("");
+    $("#empMentors").innerHTML = MENTORES.filter((m) => m.emprende).map(mentorCard).join("");
+  }
+
+  $("#quiz").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const resp = QUIZ.map((_, i) => fd.get(`q${i}`) === "1");
+    const si = resp.filter(Boolean).length;
+    const primerNo = resp.findIndex((r) => !r);
+    // Siguiente paso según la primera pregunta respondida con "todavía no"
+    const sig = [
+      "Empieza por el paso 1: observa y anota problemas que se repiten a tu alrededor.",
+      "Ve al paso 2: conversa con 5 posibles clientes esta semana antes de gastar dinero.",
+      "Revisa el paso 3: piensa en la versión más pequeña de tu idea que puedes probar ya.",
+      "Haz el paso 4: suma tus costos (materiales, transporte y tu tiempo) y define un precio.",
+      "Organiza tu semana: reserva horas fijas para tu emprendimiento sin dejar tu búsqueda de empleo.",
+    ];
+    const nivel = si === 5 ? { t: "¡Estás listo para probar tu idea!", d: "Tienes lo básico. Lanza una prueba pequeña y, cuando tengas clientes que se repiten, formalízate (paso 5).", c: "ok" }
+      : si >= 3 ? { t: "Vas por buen camino", d: sig[primerNo], c: "mid" }
+      : { t: "Todavía estás en la etapa de la idea", d: `${sig[primerNo]} Es normal: casi todos los emprendimientos empiezan aquí.`, c: "start" };
+    const r = $("#quizResult");
+    r.hidden = false;
+    r.className = `quiz__result quiz__result--${nivel.c}`;
+    r.innerHTML = `<p class="quiz__score">${si} de 5</p><div><h3>${nivel.t}</h3><p>${esc(nivel.d)}</p>
+      <button type="button" class="btn btn--outline btn--sm" data-mentor-go>${ic("chat")} Habla con un mentor emprendedor</button></div>`;
+    r.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+  $("#quizResult").addEventListener("click", (e) => {
+    if (e.target.closest("[data-mentor-go]")) $("#empMentors").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  $("#empMentors").addEventListener("click", pedirMentoria);
+  $("#empCourses").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-go-course]");
+    if (b) irACurso(b.dataset.goCourse);
+  });
+  $$("[data-scroll]").forEach((b) => b.addEventListener("click", () => $("#" + b.dataset.scroll).scrollIntoView({ behavior: "smooth", block: "start" })));
+
+  renderers.emprende = renderEmprende;
 
   /* =========================================================
      PILAR 3 — EMPLEOS
@@ -1174,6 +1262,7 @@
     if (/oferta|postul|vacante/.test(t)) return advOfertas();
     if (/mejor|debo|falta|consegu|posibilidad|recomienda/.test(t)) return advAnalisis();
     if (/empleo|trabajo/.test(t)) return advOfertas();
+    if (/emprend|negocio propio|mi propio/.test(t)) return `<p>Si no encuentras trabajo, también puedes crearlo. En la sección <b>Emprende</b> tienes una ruta de 5 pasos, una autoevaluación y mentores con negocio propio. Puedes probar tu idea mientras sigues postulando.</p><a class="link-btn" href="#emprende">${ic("arrow")} Ir a Emprende</a>`;
     if (/^(hola|buenas|hey)/.test(t)) return `<p>¡Hola, ${esc(state.perfil.nombre.split(" ")[0])}! Pregúntame qué mejorar, qué curso tomar, cómo mejorar tu hoja de vida o a qué ofertas postular.</p>`;
     return `<p>No estoy seguro de haber entendido tu pregunta. Por ahora te puedo ayudar con: qué mejorar, qué curso tomar, tu hoja de vida, a qué ofertas postular y cómo prepararte para una entrevista. Esto es lo que te recomiendo según tu perfil:</p>${advAnalisis()}`;
   }

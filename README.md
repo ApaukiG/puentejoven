@@ -52,6 +52,14 @@ En "Mi panel" del joven:
 - **Asesor IA de empleabilidad** (Mi panel): el joven pregunta qué mejorar, qué curso tomar, cómo mejorar su hoja de vida, a qué ofertas postular o cómo prepararse para una entrevista. Es un **prototipo**: las respuestas salen de reglas que cruzan el perfil con las ofertas (`HABILIDADES_MERCADO` en `js/data.js`). En producción se conectaría un modelo de IA desde un servidor, nunca con la clave en el navegador.
 - **Análisis de la hoja de vida** (dentro del Asesor): el joven sube su CV en PDF, Word (.docx) o .txt. Se lee en el navegador con pdf.js y mammoth (desde jsDelivr), sin subirlo a ningún servidor, y se revisa con reglas: secciones, contacto, largo, logros con números, verbos de acción, frases genéricas, datos personales innecesarios y habilidades que piden las ofertas de su carrera.
 
+## Emprende: Crea tu propio puente (nov. 2026)
+Nueva página `#emprende` para quien no encuentra trabajo:
+- **Ruta del emprendedor en 5 pasos** con ejemplos y tips (el paso 5 resume el RUC y el régimen RIMPE del SRI; información referencial a noviembre de 2026).
+- **Autoevaluación** de 5 preguntas con el siguiente paso recomendado.
+- **Cursos de emprendimiento** (c13–c15) y **mentores con negocio propio** (`emprende: true` en `MENTORES`).
+- **Historia de ejemplo** (marcada como tal) y llamado a la acción para seguir buscando empleo o agendar mentoría.
+- El Asesor IA también responde cuando el joven pregunta por emprender.
+
 ## Datos guardados
 Postulaciones, cursos, alertas y ofertas publicadas se guardan en el navegador (localStorage).
 En "Mi panel" → "Restablecer datos de ejemplo" vuelve al estado inicial.

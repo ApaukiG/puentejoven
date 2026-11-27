@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css?v=8" />
+  <link rel="stylesheet" href="css/styles.css?v=9" />
 </head>
 <body>
 
@@ -70,6 +70,7 @@
       <a href="#capacitaciones" data-link="capacitaciones">Capacitaciones</a>
       <a href="#mentores" data-link="mentores">Mentores</a>
       <a href="#empleos" data-link="empleos">Empleos</a>
+      <a href="#emprende" data-link="emprende">Emprende</a>
       <a href="#empresas" data-link="empresas">Para empresas</a>
       <a href="#nosotros" data-link="nosotros">Nosotros</a>
       <a href="#panel" data-link="panel" class="btn btn--primary btn--sm nav__cta" id="navPanel">
@@ -739,6 +740,91 @@
 </section>
 
 <!-- =====================================================
+     6b. EMPRENDE — Crea tu propio puente
+     Pedido tras la presentación: un camino para quien no encuentra trabajo.
+     ===================================================== -->
+<section class="page" data-page="emprende" hidden>
+  <div class="page-hero">
+    <div class="container">
+      <span class="kicker">Otro camino</span>
+      <h1>Crea tu propio <span class="serif">puente</span></h1>
+      <p class="lead">¿No encuentras el trabajo que buscas? También puedes crearlo. Te acompañamos paso a paso para empezar tu emprendimiento.</p>
+      <div class="hero__ctas">
+        <button type="button" class="btn btn--primary" data-scroll="ruta"><svg class="i"><use href="#i-target"/></svg> Ver la ruta en 5 pasos</button>
+        <button type="button" class="btn btn--outline" data-scroll="test"><svg class="i"><use href="#i-check"/></svg> ¿Estoy listo para emprender?</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ruta del emprendedor -->
+  <section class="section" id="ruta">
+    <div class="container">
+      <div class="section__head reveal">
+        <span class="kicker">Ruta del emprendedor</span>
+        <h2>Cinco pasos para empezar sin arriesgarlo todo</h2>
+        <p class="muted">Primero el problema, después el negocio. Cada paso tiene un ejemplo para que lo veas en la vida real.</p>
+      </div>
+      <ol class="route" id="route"></ol>
+    </div>
+  </section>
+
+  <!-- Autoevaluación -->
+  <section class="section section--sand" id="test">
+    <div class="container">
+      <div class="section__head reveal">
+        <span class="kicker">Autoevaluación</span>
+        <h2>¿Estoy listo para emprender?</h2>
+        <p class="muted">Cinco preguntas rápidas. No hay respuestas malas: te decimos cuál es tu siguiente paso.</p>
+      </div>
+      <form class="quiz reveal" id="quiz"></form>
+      <div class="quiz__result" id="quizResult" hidden></div>
+    </div>
+  </section>
+
+  <!-- Herramientas -->
+  <section class="section">
+    <div class="container">
+      <div class="section__head reveal">
+        <span class="kicker">Herramientas</span>
+        <h2>Cursos y mentores para emprender</h2>
+      </div>
+      <div class="emp-courses" id="empCourses"></div>
+      <h3 class="emp-sub">Mentores con negocio propio</h3>
+      <div class="mentor-grid" id="empMentors"></div>
+    </div>
+  </section>
+
+  <!-- Historia de ejemplo -->
+  <section class="section section--sand">
+    <div class="container">
+      <article class="story reveal">
+        <span class="badge badge--sand">Historia de ejemplo</span>
+        <h2>De buscar trabajo a crear el suyo</h2>
+        <p>Kevin se graduó en Diseño Gráfico y pasó seis meses enviando hojas de vida sin respuesta. Notó que muchas tiendas de su barrio no tenían redes sociales y perdían clientes. Habló con ocho dueños de negocio: cinco dijeron que pagarían por fotos y publicaciones de sus productos.</p>
+        <p>Empezó con su celular y Canva, cobrando un precio de prueba a dos tiendas. Al tercer mes ya tenía cinco clientes fijos y sacó su RUC. Hoy sigue postulando a empleos de diseño, pero con un portafolio real y clientes que lo recomiendan.</p>
+        <p class="story__note">Historia de ejemplo para ilustrar la ruta; no es un testimonio real.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- Llamado a la acción -->
+  <section class="section">
+    <div class="container">
+      <div class="cta-band reveal">
+        <div>
+          <h2>Emprender no reemplaza tu búsqueda: es otro camino posible</h2>
+          <p class="muted">Puedes probar tu idea mientras sigues postulando. Muchas veces una cosa ayuda a la otra.</p>
+        </div>
+        <div class="cta-band__btns">
+          <a href="#mentores" class="btn btn--accent"><svg class="i"><use href="#i-chat"/></svg> Agenda una mentoría</a>
+          <a href="#empleos" class="btn btn--outline"><svg class="i"><use href="#i-briefcase"/></svg> Seguir buscando empleo</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- =====================================================
      7. PARA EMPRESAS
      ===================================================== -->
 <section class="page" data-page="empresas" hidden>
@@ -903,7 +989,7 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/data.js?v=8"></script>
-<script src="js/app.js?v=8"></script>
+<script src="js/data.js?v=9"></script>
+<script src="js/app.js?v=9"></script>
 </body>
 </html>

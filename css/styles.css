@@ -897,3 +897,61 @@ input[type="range"] { accent-color: var(--coral-ink); padding: 0; min-height: 30
 .advisor__cv { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
 .advisor__cv small { color: var(--muted); font-size: .78rem; flex: 1 1 220px; }
 .advisor__note { font-size: .8rem; color: var(--muted); font-style: italic; }
+
+/* ---------- Emprende: Crea tu propio puente ---------- */
+.route { list-style: none; padding: 0; margin: 0; display: grid; gap: 18px; counter-reset: none; }
+.route__step { display: grid; grid-template-columns: 64px 1fr; gap: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 26px 28px; position: relative; }
+.route__step:not(:last-child)::after { content: ""; position: absolute; left: 59px; bottom: -19px; width: 2px; height: 18px; background: var(--line); }
+.route__num { width: 64px; height: 64px; border-radius: 50%; background: var(--coral-50); color: var(--coral-ink); display: grid; place-items: center; font: italic 400 2rem var(--font-serif); }
+.route__step:last-child .route__num { background: var(--ink); color: #fff; }
+.route__body h3 { margin: 4px 0 6px; }
+.route__body p { margin: 0 0 10px; color: var(--muted); }
+.route__ex { background: var(--paper-2); border-radius: 12px; padding: 10px 14px; font-size: .93rem; }
+.route__tips { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: .9rem; font-weight: 600; }
+.route__tips .i { width: 1em; height: 1em; vertical-align: -2px; color: var(--green); }
+.route__src { font-size: .8rem; color: var(--muted) !important; margin-top: 10px !important; }
+.route__src a { color: var(--coral-ink); }
+
+.quiz { display: grid; gap: 14px; max-width: 760px; }
+.quiz__q { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 16px 18px; margin: 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.quiz__q legend { float: left; width: 100%; font-weight: 700; margin-bottom: 6px; padding: 0; }
+.quiz__q .chip { cursor: pointer; }
+.quiz__q .chip:has(input:checked) { background: var(--ink); color: #fff; border-color: var(--ink); }
+.quiz__q input { accent-color: var(--coral); }
+.quiz .btn { justify-self: start; }
+.quiz__result { max-width: 760px; margin-top: 20px; display: flex; gap: 22px; align-items: center; background: var(--surface); border-radius: var(--r-lg); padding: 24px 26px; border: 2px solid var(--line); }
+.quiz__result--ok { border-color: var(--green); }
+.quiz__result--mid { border-color: var(--coral); }
+.quiz__score { font: 800 2.6rem var(--font-head); margin: 0; flex: none; color: var(--coral-ink); }
+.quiz__result h3 { margin: 0 0 6px; }
+.quiz__result p { margin: 0 0 12px; }
+
+.emp-courses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
+.emp-course { display: flex; gap: 14px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px; flex-wrap: wrap; }
+.emp-course > div { flex: 1 1 160px; }
+.emp-course h4 { margin: 0 0 4px; font-size: 1rem; }
+.emp-course small { color: var(--muted); }
+.emp-sub { margin: 0 0 16px; }
+#empMentors { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 900px; }
+
+.story { max-width: 780px; margin: 0 auto; background: var(--surface); border-radius: var(--r-lg); padding: clamp(24px, 4vw, 44px); border: 1px solid var(--line); }
+.story h2 { margin: 12px 0 14px; }
+.story p { line-height: 1.7; }
+.story__note { font-size: .82rem; color: var(--muted); font-style: italic; margin-bottom: 0; }
+
+.cta-band { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; background: var(--ink); color: #fff; border-radius: var(--r-lg); padding: clamp(26px, 4vw, 44px); }
+.cta-band h2 { color: #fff; margin: 0 0 8px; max-width: 620px; }
+.cta-band .muted { color: #C9CCDA; margin: 0; }
+.cta-band__btns { display: flex; flex-wrap: wrap; gap: 12px; }
+.cta-band .btn--outline { color: #fff; border-color: rgba(255,255,255,.5); }
+
+@media (max-width: 900px) {
+  .emp-courses { grid-template-columns: 1fr; }
+  #empMentors { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .route__step { grid-template-columns: 1fr; padding: 22px 20px; gap: 12px; }
+  .route__num { width: 48px; height: 48px; font-size: 1.5rem; }
+  .route__step:not(:last-child)::after { display: none; }
+  .quiz__result { flex-direction: column; align-items: flex-start; }
+}
